@@ -29,6 +29,14 @@ class _JournalScreenState extends State<JournalScreen> {
     });
   }
 
+  double calculateOverallRating(Map<String, dynamic> entry) {
+    double aroma = (entry['aroma'] ?? 0);
+    double acidity = (entry['acidity'] ?? 0);
+    double sweetness = (entry['sweetness'] ?? 0);
+    double body = (entry['body'] ?? 0);
+    return (aroma + acidity + sweetness + body) / 4;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,6 +45,7 @@ class _JournalScreenState extends State<JournalScreen> {
         itemCount: _brewingResults.length,
         itemBuilder: (context, index) {
           final result = _brewingResults[index];
+          double overall = calculateOverallRating(result);
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: ListTile(
@@ -70,7 +79,7 @@ class _JournalScreenState extends State<JournalScreen> {
                   }
                 },
               ),
-              trailing: CircleAvatar(child: Text(result['aroma'].toString())),
+              trailing: CircleAvatar(child: Text(overall.toStringAsFixed(1))),
               onTap: () async {
                 final shouldReload = await Navigator.push(
                   context,

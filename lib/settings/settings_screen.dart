@@ -1,3 +1,4 @@
+import 'package:brew_diary/settings/statistics_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../grinder/coffee_grinder_screen.dart';
@@ -28,6 +29,19 @@ class SettingsScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const CoffeeGrinderScreen(),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              title: const Text('Статистика заваривания'),
+              trailing: const Icon(Icons.bar_chart),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const StatisticsScreen(),
                   ),
                 );
               },

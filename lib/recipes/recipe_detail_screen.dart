@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../db/db_helper.dart';
 import 'add_edit_recipe_screen.dart';
@@ -33,6 +34,16 @@ class RecipeDetailScreen extends StatelessWidget {
                   ),
                 );
               }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () {
+              final shareContent =
+                  "Рецепт: ${recipe['name']}\n"
+                  "Описание: ${recipe['description']}\n"
+                  "Инструкции: ${recipe['instructions']}";
+              Share.share(shareContent, subject: recipe['name']);
             },
           ),
           IconButton(
