@@ -34,7 +34,8 @@ class DBHelper {
             sweetness REAL,
             body REAL,
             timestamp TEXT,
-            recipeId INTEGER
+            recipeId INTEGER,
+            imagePath TEXT
           )
         ''');
         await db.execute('''

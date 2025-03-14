@@ -55,6 +55,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     final recipes = await DBHelper().getRecipes();
     setState(() {
       _recipes = recipes;
+      debugPrint('_loadRecipes recipes: $recipes');
     });
   }
 
@@ -110,6 +111,28 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   }
 
   Widget _buildRecipeDropdown() {
+    if (_recipes.isEmpty) {
+      return InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Связать с рецептом (опционально)',
+        ),
+        child: Row(
+          children: const [
+            CircularProgressIndicator(strokeWidth: 2),
+            SizedBox(width: 16),
+            Text('Загрузка рецептов...'),
+          ],
+        ),
+      );
+    }
+
+    final Map<int, Map<String, dynamic>> uniqueRecipes = {};
+    for (var recipe in _recipes) {
+      final id = recipe['id'] as int;
+      uniqueRecipes[id] = recipe;
+    }
+    final uniqueRecipesList = uniqueRecipes.values.toList();
+
     return DropdownButtonFormField<int?>(
       decoration: const InputDecoration(
         labelText: 'Связать с рецептом (опционально)',
@@ -117,7 +140,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
       value: _selectedRecipeId,
       items: [
         const DropdownMenuItem<int?>(value: null, child: Text('Нет рецепта')),
-        ..._recipes.map((recipe) {
+        ...uniqueRecipesList.map((recipe) {
           return DropdownMenuItem<int?>(
             value: recipe['id'] as int,
             child: Text(recipe['name']),

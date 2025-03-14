@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../db/db_helper.dart';
 
@@ -21,9 +24,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   double _acidity = 3;
   double _sweetness = 3;
   double _body = 3;
-  int? _selectedRecipeId;
 
   List<Map<String, dynamic>> _recipes = [];
+  int? _selectedRecipeId;
+
+  String? _imagePath;
 
   @override
   void initState() {
@@ -47,6 +52,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _imagePath = image.path;
+      });
+    }
+  }
+
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       final newEntry = {
@@ -60,6 +75,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         'body': _body,
         'timestamp': DateTime.now().toIso8601String(),
         'recipeId': _selectedRecipeId,
+        'imagePath': _imagePath,
       };
 
       Navigator.of(context).pop(newEntry);
@@ -190,6 +206,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
               ),
               const SizedBox(height: 20),
               _buildRecipeDropdown(),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.image),
+                label: const Text('Выбрать фото'),
+              ),
+              if (_imagePath != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Image.file(File(_imagePath!), height: 150),
+                ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,

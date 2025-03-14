@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../db/db_helper.dart';
@@ -38,6 +40,15 @@ class _JournalScreenState extends State<JournalScreen> {
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: ListTile(
+              leading:
+                  result['imagePath'] != null
+                      ? Image.file(
+                        File(result['imagePath']),
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      )
+                      : const Icon(Icons.local_cafe),
               title: Text(result['method']),
               subtitle: FutureBuilder<Map<String, dynamic>?>(
                 future:

@@ -4,7 +4,7 @@ import '../db/db_helper.dart';
 import 'add_edit_grinder_screen.dart';
 
 class CoffeeGrinderScreen extends StatefulWidget {
-  const CoffeeGrinderScreen({Key? key}) : super(key: key);
+  const CoffeeGrinderScreen({super.key});
 
   @override
   _CoffeeGrinderScreenState createState() => _CoffeeGrinderScreenState();
