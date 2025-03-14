@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
 
@@ -37,6 +38,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     double totalBrews = _results.length.toDouble();
     double averageRating = 0;
     if (_results.isNotEmpty) {
@@ -48,7 +50,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Статистика заваривания')),
+      appBar: AppBar(title: Text(l10n.statistics)),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())

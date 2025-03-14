@@ -2,11 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'settings/theme_provider.dart';
 import 'home/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // DB init for desktop platform
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
@@ -14,18 +19,50 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   }
 
-  runApp(const BrewDiaryApp());
+  final prefs = await SharedPreferences.getInstance();
+  runApp(BrewDiaryApp(prefs: prefs));
 }
 
 class BrewDiaryApp extends StatelessWidget {
-  const BrewDiaryApp({super.key});
+  final SharedPreferences prefs;
+
+  const BrewDiaryApp({super.key, required this.prefs});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BrewDiary',
-      theme: ThemeData(primarySwatch: Colors.brown),
-      home: const HomeScreen(),
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(prefs),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'BrewDiary',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.brown,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            themeMode: themeProvider.themeMode,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'), // English
+              Locale('es'), // Spanish
+              Locale('ru'), // Russian
+            ],
+            home: const HomeScreen(),
+          );
+        },
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class BrewGuideScreen extends StatefulWidget {
   final Map<String, dynamic> recipe;
@@ -12,6 +13,7 @@ class BrewGuideScreen extends StatefulWidget {
 class _BrewGuideScreenState extends State<BrewGuideScreen> {
   late List<String> steps;
   int currentStepIndex = 0;
+  late PageController _pageController;
 
   @override
   void initState() {
@@ -22,6 +24,7 @@ class _BrewGuideScreenState extends State<BrewGuideScreen> {
             .split('\n')
             .where((s) => s.trim().isNotEmpty)
             .toList();
+    _pageController = PageController();
   }
 
   void _goToNextStep() {
@@ -42,47 +45,67 @@ class _BrewGuideScreenState extends State<BrewGuideScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentStep =
-        steps.isNotEmpty ? steps[currentStepIndex] : "Инструкции отсутствуют";
-
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text("Пошаговое руководство")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              "Шаг ${currentStepIndex + 1} из ${steps.length}",
-              style: Theme.of(context).textTheme.headlineMedium,
+      appBar: AppBar(title: Text(l10n.stepByStepGuide)),
+      body: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  currentStepIndex = index;
+                });
+              },
+              itemCount: steps.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${l10n.steps} ${index + 1}',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(steps[index]),
+                    ],
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  currentStep,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ElevatedButton(
-                  onPressed: currentStepIndex > 0 ? _goToPreviousStep : null,
-                  child: const Text("Назад"),
-                ),
-                ElevatedButton(
-                  onPressed:
-                      currentStepIndex < steps.length - 1
-                          ? _goToNextStep
-                          : null,
-                  child: const Text("Далее"),
-                ),
+                if (currentStepIndex > 0)
+                  ElevatedButton(
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Text(l10n.back),
+                  ),
+                if (currentStepIndex < steps.length - 1)
+                  ElevatedButton(
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Text(l10n.next),
+                  ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
 
@@ -60,13 +61,10 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.grinder == null
-              ? 'Добавить кофемолку'
-              : 'Редактировать кофемолку',
-        ),
+        title: Text(widget.grinder == null ? l10n.addGrinder : l10n.editGrinder),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -76,7 +74,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Название'),
+                decoration: InputDecoration(labelText: l10n.grinderName),
                 validator:
                     (value) =>
                         value == null || value.isEmpty
@@ -85,17 +83,17 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Описание'),
+                decoration: InputDecoration(labelText: l10n.grinderDescription),
               ),
               TextFormField(
                 controller: _settingsController,
-                decoration: const InputDecoration(labelText: 'Настройки'),
+                decoration: InputDecoration(labelText: l10n.grinderSettings),
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,
-                child: const Text('Сохранить'),
+                child: Text(l10n.save),
               ),
             ],
           ),

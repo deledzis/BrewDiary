@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
 import 'add_edit_recipe_screen.dart';
@@ -12,6 +13,7 @@ class RecipeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(recipe['name']),
@@ -53,18 +55,16 @@ class RecipeDetailScreen extends StatelessWidget {
                 context: context,
                 builder:
                     (context) => AlertDialog(
-                      title: const Text('Удалить рецепт?'),
-                      content: const Text(
-                        'Вы уверены, что хотите удалить этот рецепт?',
-                      ),
+                      title: Text(l10n.deleteRecipe),
+                      content: Text(l10n.deleteRecipe),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Нет'),
+                          child: Text(l10n.no),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Да'),
+                          child: Text(l10n.yes),
                         ),
                       ],
                     ),

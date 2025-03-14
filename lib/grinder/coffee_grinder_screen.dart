@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
 import 'add_edit_grinder_screen.dart';
@@ -28,8 +29,9 @@ class _CoffeeGrinderScreenState extends State<CoffeeGrinderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Кофемолки')),
+      appBar: AppBar(title: Text(l10n.grinders)),
       body: ListView.builder(
         itemCount: _grinders.length,
         itemBuilder: (context, index) {

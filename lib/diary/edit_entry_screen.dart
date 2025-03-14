@@ -141,12 +141,12 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
 
   Widget _buildRecipeDropdown() {
     if (_isRecipesLoading) {
-      return InputDecorator(
-        decoration: const InputDecoration(
+      return const InputDecorator(
+        decoration: InputDecoration(
           labelText: 'Связать с рецептом (опционально)',
         ),
         child: Row(
-          children: const [
+          children: [
             CircularProgressIndicator(strokeWidth: 2),
             SizedBox(width: 16),
             Text('Загрузка рецептов...'),

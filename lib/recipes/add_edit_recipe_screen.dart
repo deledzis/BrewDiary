@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
 
@@ -69,34 +70,12 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     }
   }
 
-  Widget _buildGrinderDropdown() {
-    return DropdownButtonFormField<int?>(
-      decoration: const InputDecoration(labelText: 'Кофемолка (опционально)'),
-      value: _selectedGrinderId,
-      items: [
-        const DropdownMenuItem<int?>(value: null, child: Text('Нет кофемолки')),
-        ..._grinders.map((grinder) {
-          return DropdownMenuItem<int?>(
-            value: grinder['id'] as int,
-            child: Text(grinder['name']),
-          );
-        }),
-      ],
-      onChanged: (value) {
-        setState(() {
-          _selectedGrinderId = value;
-        });
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.recipe == null ? 'Добавить рецепт' : 'Редактировать рецепт',
-        ),
+        title: Text(widget.recipe == null ? l10n.addRecipe : l10n.editRecipe),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -106,9 +85,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Название рецепта',
-                ),
+                decoration: InputDecoration(labelText: l10n.name),
                 validator:
                     (value) =>
                         value == null || value.isEmpty
@@ -117,11 +94,12 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Описание'),
+                decoration: InputDecoration(labelText: l10n.description),
+                maxLines: 3,
               ),
               TextFormField(
                 controller: _instructionsController,
-                decoration: const InputDecoration(labelText: 'Инструкции'),
+                decoration: InputDecoration(labelText: l10n.method),
                 maxLines: 5,
                 validator:
                     (value) =>
@@ -130,11 +108,31 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                             : null,
               ),
               const SizedBox(height: 20),
-              _buildGrinderDropdown(),
+              DropdownButtonFormField<int?>(
+                decoration: InputDecoration(labelText: l10n.grinder),
+                value: _selectedGrinderId,
+                items: [
+                  DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text(l10n.noGrinder),
+                  ),
+                  ..._grinders.map((grinder) {
+                    return DropdownMenuItem<int?>(
+                      value: grinder['id'] as int,
+                      child: Text(grinder['name']),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedGrinderId = value;
+                  });
+                },
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,
-                child: const Text('Сохранить'),
+                child: Text(l10n.save),
               ),
             ],
           ),
