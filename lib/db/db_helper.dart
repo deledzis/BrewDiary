@@ -35,7 +35,8 @@ class DBHelper {
             body REAL,
             timestamp TEXT,
             recipeId INTEGER,
-            imagePath TEXT
+            imagePath TEXT,
+            notes TEXT
           )
         ''');
         await db.execute('''
@@ -146,17 +147,16 @@ class DBHelper {
 
   Future<int> deleteGrinder(int id) async {
     final db = await database;
-    return await db.delete(
-      'grinders',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('grinders', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<Map<String, dynamic>?> getGrinderById(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> result =
-    await db.query('grinders', where: 'id = ?', whereArgs: [id]);
+    List<Map<String, dynamic>> result = await db.query(
+      'grinders',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     return result.isNotEmpty ? result.first : null;
   }
 }

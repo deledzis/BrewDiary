@@ -80,6 +80,15 @@ class EntryDetailScreen extends StatelessWidget {
             Text('Сладость: ${entry['sweetness']}'),
             Text('Тело напитка: ${entry['body']}'),
             const Divider(),
+            if (entry['notes'] != null &&
+                entry['notes'].toString().trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Заметки: ${entry['notes']}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
             FutureBuilder<Map<String, dynamic>?>(
               future:
                   entry['recipeId'] != null

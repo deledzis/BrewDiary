@@ -19,15 +19,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final _coffeeGramsController = TextEditingController();
   final _waterVolumeController = TextEditingController();
   final _temperatureController = TextEditingController();
+  final _notesController = TextEditingController();
 
   double _aroma = 3;
   double _acidity = 3;
   double _sweetness = 3;
   double _body = 3;
+  bool _isRecipesLoading = true;
 
   List<Map<String, dynamic>> _recipes = [];
   int? _selectedRecipeId;
-
   String? _imagePath;
 
   @override
@@ -37,9 +38,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   Future<void> _loadRecipes() async {
+    setState(() {
+      _isRecipesLoading = true;
+    });
     final recipes = await DBHelper().getRecipes();
     setState(() {
       _recipes = recipes;
+      _isRecipesLoading = false;
     });
   }
 
@@ -49,6 +54,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     _coffeeGramsController.dispose();
     _waterVolumeController.dispose();
     _temperatureController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -76,6 +82,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         'timestamp': DateTime.now().toIso8601String(),
         'recipeId': _selectedRecipeId,
         'imagePath': _imagePath,
+        'notes': _notesController.text,
       };
 
       Navigator.of(context).pop(newEntry);
@@ -104,6 +111,45 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   Widget _buildRecipeDropdown() {
+    if (_isRecipesLoading) {
+      return InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Связать с рецептом (опционально)',
+        ),
+        child: Row(
+          children: const [
+            CircularProgressIndicator(strokeWidth: 2),
+            SizedBox(width: 16),
+            Text('Загрузка рецептов...'),
+          ],
+        ),
+      );
+    }
+
+    if (_recipes.isEmpty) {
+      return DropdownButtonFormField<int?>(
+        decoration: const InputDecoration(
+          labelText: 'Связать с рецептом (опционально)',
+        ),
+        value: _selectedRecipeId,
+        items: const [
+          DropdownMenuItem<int?>(value: null, child: Text('Нет рецепта')),
+        ],
+        onChanged: (value) {
+          setState(() {
+            _selectedRecipeId = value;
+          });
+        },
+      );
+    }
+
+    final Map<int, Map<String, dynamic>> uniqueRecipes = {};
+    for (var recipe in _recipes) {
+      final id = recipe['id'] as int;
+      uniqueRecipes[id] = recipe;
+    }
+    final uniqueRecipesList = uniqueRecipes.values.toList();
+
     return DropdownButtonFormField<int?>(
       decoration: const InputDecoration(
         labelText: 'Связать с рецептом (опционально)',
@@ -111,7 +157,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       value: _selectedRecipeId,
       items: [
         const DropdownMenuItem<int?>(value: null, child: Text('Нет рецепта')),
-        ..._recipes.map((recipe) {
+        ...uniqueRecipesList.map((recipe) {
           return DropdownMenuItem<int?>(
             value: recipe['id'] as int,
             child: Text(recipe['name']),
@@ -123,6 +169,55 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           _selectedRecipeId = value;
         });
       },
+    );
+  }
+
+  Widget _buildImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Изображение записи:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        _imagePath != null
+            ? Image.file(File(_imagePath!), height: 150)
+            : const Text('Изображение не выбрано'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.image),
+              label: const Text('Добавить/Заменить'),
+            ),
+            const SizedBox(width: 16),
+            if (_imagePath != null)
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _imagePath = null;
+                  });
+                },
+                icon: const Icon(Icons.delete),
+                label: const Text('Удалить'),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotesSection() {
+    // Поле для заметок
+    return TextFormField(
+      controller: _notesController,
+      decoration: const InputDecoration(
+        labelText: 'Заметки',
+        alignLabelWithHint: true,
+      ),
+      maxLines: 3,
     );
   }
 
@@ -207,16 +302,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
               const SizedBox(height: 20),
               _buildRecipeDropdown(),
               const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.image),
-                label: const Text('Выбрать фото'),
-              ),
-              if (_imagePath != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Image.file(File(_imagePath!), height: 150),
-                ),
+              _buildImageSection(),
+              const SizedBox(height: 20),
+              _buildNotesSection(),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,

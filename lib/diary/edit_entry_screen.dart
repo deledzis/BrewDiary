@@ -21,15 +21,16 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   late TextEditingController _coffeeGramsController;
   late TextEditingController _waterVolumeController;
   late TextEditingController _temperatureController;
+  late TextEditingController _notesController;
 
   late double _aroma;
   late double _acidity;
   late double _sweetness;
   late double _body;
+  bool _isRecipesLoading = true;
 
   List<Map<String, dynamic>> _recipes = [];
   int? _selectedRecipeId;
-
   String? _imagePath;
 
   @override
@@ -45,12 +46,12 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     _temperatureController = TextEditingController(
       text: widget.entry['temperature'].toString(),
     );
+    _notesController = TextEditingController(text: widget.entry['notes'] ?? '');
 
     _aroma = widget.entry['aroma'] as double;
     _acidity = widget.entry['acidity'] as double;
     _sweetness = widget.entry['sweetness'] as double;
     _body = widget.entry['body'] as double;
-
     _selectedRecipeId = widget.entry['recipeId'];
     _imagePath = widget.entry['imagePath'];
 
@@ -58,10 +59,13 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   }
 
   Future<void> _loadRecipes() async {
+    setState(() {
+      _isRecipesLoading = true;
+    });
     final recipes = await DBHelper().getRecipes();
     setState(() {
       _recipes = recipes;
-      debugPrint('_loadRecipes recipes: $recipes');
+      _isRecipesLoading = false;
     });
   }
 
@@ -71,10 +75,10 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     _coffeeGramsController.dispose();
     _waterVolumeController.dispose();
     _temperatureController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
-  // Метод для выбора изображения из галереи
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -85,7 +89,6 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     }
   }
 
-  // Метод для удаления выбранного изображения
   void _removeImage() {
     setState(() {
       _imagePath = null;
@@ -107,6 +110,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
         'timestamp': DateTime.now().toIso8601String(),
         'recipeId': _selectedRecipeId,
         'imagePath': _imagePath,
+        'notes': _notesController.text,
       };
 
       await DBHelper().updateBrewingResult(updatedEntry);
@@ -136,7 +140,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   }
 
   Widget _buildRecipeDropdown() {
-    if (_recipes.isEmpty) {
+    if (_isRecipesLoading) {
       return InputDecorator(
         decoration: const InputDecoration(
           labelText: 'Связать с рецептом (опционально)',
@@ -148,6 +152,23 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
             Text('Загрузка рецептов...'),
           ],
         ),
+      );
+    }
+
+    if (_recipes.isEmpty) {
+      return DropdownButtonFormField<int?>(
+        decoration: const InputDecoration(
+          labelText: 'Связать с рецептом (опционально)',
+        ),
+        value: _selectedRecipeId,
+        items: const [
+          DropdownMenuItem<int?>(value: null, child: Text('Нет рецепта')),
+        ],
+        onChanged: (value) {
+          setState(() {
+            _selectedRecipeId = value;
+          });
+        },
       );
     }
 
@@ -295,6 +316,15 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
               _buildRecipeDropdown(),
               const SizedBox(height: 20),
               _buildImageSection(),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Заметки',
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 3,
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,
