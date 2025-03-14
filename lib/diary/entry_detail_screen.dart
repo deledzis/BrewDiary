@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../db/db_helper.dart';
@@ -10,6 +12,20 @@ class EntryDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget imageSection = const SizedBox.shrink();
+    if (entry['imagePath'] != null &&
+        (entry['imagePath'] as String).isNotEmpty) {
+      imageSection = Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Image.file(
+          File(entry['imagePath']),
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Детали записи'),
@@ -49,6 +65,7 @@ class EntryDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
+            imageSection,
             Text(
               'Метод: ${entry['method']}',
               style: Theme.of(context).textTheme.headlineMedium,

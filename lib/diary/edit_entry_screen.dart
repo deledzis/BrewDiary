@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../db/db_helper.dart';
 
@@ -27,6 +30,8 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   List<Map<String, dynamic>> _recipes = [];
   int? _selectedRecipeId;
 
+  String? _imagePath;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +52,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     _body = widget.entry['body'] as double;
 
     _selectedRecipeId = widget.entry['recipeId'];
+    _imagePath = widget.entry['imagePath'];
 
     _loadRecipes();
   }
@@ -68,6 +74,24 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     super.dispose();
   }
 
+  // Метод для выбора изображения из галереи
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _imagePath = image.path;
+      });
+    }
+  }
+
+  // Метод для удаления выбранного изображения
+  void _removeImage() {
+    setState(() {
+      _imagePath = null;
+    });
+  }
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final updatedEntry = {
@@ -82,6 +106,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
         'body': _body,
         'timestamp': DateTime.now().toIso8601String(),
         'recipeId': _selectedRecipeId,
+        'imagePath': _imagePath,
       };
 
       await DBHelper().updateBrewingResult(updatedEntry);
@@ -152,6 +177,39 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
           _selectedRecipeId = value;
         });
       },
+    );
+  }
+
+  Widget _buildImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Изображение записи:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        _imagePath != null
+            ? Image.file(File(_imagePath!), height: 150)
+            : const Text('Изображение не выбрано'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.image),
+              label: const Text('Добавить/Заменить'),
+            ),
+            const SizedBox(width: 16),
+            if (_imagePath != null)
+              ElevatedButton.icon(
+                onPressed: _removeImage,
+                icon: const Icon(Icons.delete),
+                label: const Text('Удалить'),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -235,6 +293,8 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
               ),
               const SizedBox(height: 20),
               _buildRecipeDropdown(),
+              const SizedBox(height: 20),
+              _buildImageSection(),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,
