@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../db/db_helper.dart';
+
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({super.key});
 
@@ -19,6 +21,22 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   double _acidity = 3;
   double _sweetness = 3;
   double _body = 3;
+  int? _selectedRecipeId;
+
+  List<Map<String, dynamic>> _recipes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipes();
+  }
+
+  Future<void> _loadRecipes() async {
+    final recipes = await DBHelper().getRecipes();
+    setState(() {
+      _recipes = recipes;
+    });
+  }
 
   @override
   void dispose() {
@@ -41,9 +59,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         'sweetness': _sweetness,
         'body': _body,
         'timestamp': DateTime.now().toIso8601String(),
+        'recipeId': _selectedRecipeId,
       };
 
-      // Возвращаем данные на предыдущий экран
       Navigator.of(context).pop(newEntry);
     }
   }
@@ -66,6 +84,29 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           onChanged: onChanged,
         ),
       ],
+    );
+  }
+
+  Widget _buildRecipeDropdown() {
+    return DropdownButtonFormField<int?>(
+      decoration: const InputDecoration(
+        labelText: 'Связать с рецептом (опционально)',
+      ),
+      value: _selectedRecipeId,
+      items: [
+        const DropdownMenuItem<int?>(value: null, child: Text('Нет рецепта')),
+        ..._recipes.map((recipe) {
+          return DropdownMenuItem<int?>(
+            value: recipe['id'] as int,
+            child: Text(recipe['name']),
+          );
+        }),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedRecipeId = value;
+        });
+      },
     );
   }
 
@@ -147,6 +188,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                 _body,
                 (value) => setState(() => _body = value),
               ),
+              const SizedBox(height: 20),
+              _buildRecipeDropdown(),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,

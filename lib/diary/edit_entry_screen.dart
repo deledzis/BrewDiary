@@ -24,6 +24,10 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   late double _sweetness;
   late double _body;
 
+  // Список рецептов и выбранный id рецепта
+  List<Map<String, dynamic>> _recipes = [];
+  int? _selectedRecipeId;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +46,18 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     _acidity = widget.entry['acidity'] as double;
     _sweetness = widget.entry['sweetness'] as double;
     _body = widget.entry['body'] as double;
+
+    // Инициализируем выбранный рецепт, если он уже задан
+    _selectedRecipeId = widget.entry['recipeId'];
+
+    _loadRecipes();
+  }
+
+  Future<void> _loadRecipes() async {
+    final recipes = await DBHelper().getRecipes();
+    setState(() {
+      _recipes = recipes;
+    });
   }
 
   @override
@@ -66,6 +82,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
         'sweetness': _sweetness,
         'body': _body,
         'timestamp': DateTime.now().toIso8601String(),
+        'recipeId': _selectedRecipeId,
       };
 
       await DBHelper().updateBrewingResult(updatedEntry);
@@ -91,6 +108,29 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
           onChanged: onChanged,
         ),
       ],
+    );
+  }
+
+  Widget _buildRecipeDropdown() {
+    return DropdownButtonFormField<int?>(
+      decoration: const InputDecoration(
+        labelText: 'Связать с рецептом (опционально)',
+      ),
+      value: _selectedRecipeId,
+      items: [
+        const DropdownMenuItem<int?>(value: null, child: Text('Нет рецепта')),
+        ..._recipes.map((recipe) {
+          return DropdownMenuItem<int?>(
+            value: recipe['id'] as int,
+            child: Text(recipe['name']),
+          );
+        }),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedRecipeId = value;
+        });
+      },
     );
   }
 
@@ -172,6 +212,8 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                 _body,
                 (value) => setState(() => _body = value),
               ),
+              const SizedBox(height: 20),
+              _buildRecipeDropdown(),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,

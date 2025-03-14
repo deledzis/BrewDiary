@@ -5,7 +5,7 @@ import 'add_edit_recipe_screen.dart';
 import 'recipe_detail_screen.dart';
 
 class RecipesScreen extends StatefulWidget {
-  const RecipesScreen({Key? key}) : super(key: key);
+  const RecipesScreen({super.key});
 
   @override
   _RecipesScreenState createState() => _RecipesScreenState();
@@ -30,9 +30,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Рецепты'),
-      ),
+      appBar: AppBar(title: const Text('Рецепты')),
       body: ListView.builder(
         itemCount: _recipes.length,
         itemBuilder: (context, index) {

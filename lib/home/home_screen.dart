@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
 import '../recipes/recipes_screen.dart';
+import 'journal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -12,10 +12,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  final List<Widget> _pages = const [
-    JournalScreen(),
-    RecipesScreen(),
-  ];
+  final List<Widget> _pages = const [JournalScreen(), RecipesScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: 'Дневник',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Дневник'),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: 'Рецепты',

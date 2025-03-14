@@ -17,7 +17,6 @@ class EntryDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.delete),
             onPressed: () async {
-              // Подтверждение удаления
               final confirm = await showDialog<bool>(
                 context: context,
                 builder:
@@ -39,9 +38,7 @@ class EntryDetailScreen extends StatelessWidget {
                     ),
               );
               if (confirm == true) {
-                // Удаление записи из БД
                 await DBHelper().deleteBrewingResult(entry['id']);
-                // Закрываем экран, сигнализируя о необходимости обновления списка
                 Navigator.pop(context, true);
               }
             },
@@ -66,6 +63,29 @@ class EntryDetailScreen extends StatelessWidget {
             Text('Сладость: ${entry['sweetness']}'),
             Text('Тело напитка: ${entry['body']}'),
             const Divider(),
+            FutureBuilder<Map<String, dynamic>?>(
+              future:
+                  entry['recipeId'] != null
+                      ? DBHelper().getRecipeById(entry['recipeId'])
+                      : Future.value(null),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Text('Загрузка рецепта...');
+                } else if (snapshot.hasData && snapshot.data != null) {
+                  final recipe = snapshot.data!;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Рецепт: ${recipe['name']}'),
+                      Text('Описание: ${recipe['description']}'),
+                    ],
+                  );
+                } else {
+                  return const Text('Рецепт не выбран');
+                }
+              },
+            ),
+            const Divider(),
             Text('Дата: ${entry['timestamp']}'),
           ],
         ),
@@ -73,14 +93,12 @@ class EntryDetailScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.edit),
         onPressed: () async {
-          // Переход к экрану редактирования
           final updatedEntry = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => EditEntryScreen(entry: entry),
             ),
           );
-          // Если запись была изменена – обновляем экран (при необходимости можно передать обновлённые данные назад)
           if (updatedEntry != null) {
             Navigator.pop(context, true);
           }
