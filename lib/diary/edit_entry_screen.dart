@@ -24,7 +24,6 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   late double _sweetness;
   late double _body;
 
-  // Список рецептов и выбранный id рецепта
   List<Map<String, dynamic>> _recipes = [];
   int? _selectedRecipeId;
 
@@ -47,7 +46,6 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     _sweetness = widget.entry['sweetness'] as double;
     _body = widget.entry['body'] as double;
 
-    // Инициализируем выбранный рецепт, если он уже задан
     _selectedRecipeId = widget.entry['recipeId'];
 
     _loadRecipes();

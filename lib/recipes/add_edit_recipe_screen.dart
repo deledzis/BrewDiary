@@ -18,6 +18,9 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _instructionsController;
 
+  List<Map<String, dynamic>> _grinders = [];
+  int? _selectedGrinderId;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +31,15 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     _instructionsController = TextEditingController(
       text: widget.recipe?['instructions'] ?? '',
     );
+    _selectedGrinderId = widget.recipe?['grinderId'];
+    _loadGrinders();
+  }
+
+  Future<void> _loadGrinders() async {
+    final grinders = await DBHelper().getGrinders();
+    setState(() {
+      _grinders = grinders;
+    });
   }
 
   @override
@@ -44,18 +56,38 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
         'name': _nameController.text,
         'description': _descriptionController.text,
         'instructions': _instructionsController.text,
+        'grinderId': _selectedGrinderId,
       };
 
       if (widget.recipe == null) {
-        // Добавление нового рецепта
         await DBHelper().insertRecipe(recipeData);
       } else {
-        // Обновление существующего рецепта
         recipeData['id'] = widget.recipe!['id'];
         await DBHelper().updateRecipe(recipeData);
       }
       Navigator.pop(context, recipeData);
     }
+  }
+
+  Widget _buildGrinderDropdown() {
+    return DropdownButtonFormField<int?>(
+      decoration: const InputDecoration(labelText: 'Кофемолка (опционально)'),
+      value: _selectedGrinderId,
+      items: [
+        const DropdownMenuItem<int?>(value: null, child: Text('Нет кофемолки')),
+        ..._grinders.map((grinder) {
+          return DropdownMenuItem<int?>(
+            value: grinder['id'] as int,
+            child: Text(grinder['name']),
+          );
+        }),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedGrinderId = value;
+        });
+      },
+    );
   }
 
   @override
@@ -97,6 +129,8 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                             ? 'Введите инструкции'
                             : null,
               ),
+              const SizedBox(height: 20),
+              _buildGrinderDropdown(),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,

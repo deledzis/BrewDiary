@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../recipes/recipes_screen.dart';
+import '../settings/settings_screen.dart';
 import 'journal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -12,11 +13,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  final List<Widget> _pages = const [JournalScreen(), RecipesScreen()];
+  final List<Widget> _pages = const [
+    JournalScreen(),
+    RecipesScreen(),
+    SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('BrewDiary')),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -30,6 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: 'Рецепты',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Настройки',
           ),
         ],
       ),

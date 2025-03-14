@@ -23,7 +23,7 @@ class BrewDiaryApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Coffee Journal',
+      title: 'BrewDiary',
       theme: ThemeData(primarySwatch: Colors.brown),
       home: const HomeScreen(),
     );

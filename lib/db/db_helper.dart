@@ -42,7 +42,16 @@ class DBHelper {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             description TEXT,
-            instructions TEXT
+            instructions TEXT,
+            grinderId INTEGER
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE grinders(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            description TEXT,
+            settings TEXT
           )
         ''');
       },
@@ -112,5 +121,41 @@ class DBHelper {
   Future<int> deleteRecipe(int id) async {
     final db = await database;
     return await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> insertGrinder(Map<String, dynamic> grinder) async {
+    final db = await database;
+    return await db.insert('grinders', grinder);
+  }
+
+  Future<List<Map<String, dynamic>>> getGrinders() async {
+    final db = await database;
+    return await db.query('grinders', orderBy: 'id DESC');
+  }
+
+  Future<int> updateGrinder(Map<String, dynamic> grinder) async {
+    final db = await database;
+    return await db.update(
+      'grinders',
+      grinder,
+      where: 'id = ?',
+      whereArgs: [grinder['id']],
+    );
+  }
+
+  Future<int> deleteGrinder(int id) async {
+    final db = await database;
+    return await db.delete(
+      'grinders',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<Map<String, dynamic>?> getGrinderById(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> result =
+    await db.query('grinders', where: 'id = ?', whereArgs: [id]);
+    return result.isNotEmpty ? result.first : null;
   }
 }
