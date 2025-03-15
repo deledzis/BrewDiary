@@ -16,11 +16,22 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   List<Map<String, dynamic>> _brewingResults = [];
+  final Map<int, String> _methodNames = {};
 
   @override
   void initState() {
     super.initState();
     _loadBrewingResults();
+    _loadMethods();
+  }
+
+  Future<void> _loadMethods() async {
+    final methods = await DBHelper().getMethods();
+    setState(() {
+      for (var method in methods) {
+        _methodNames[method['id']] = method['name'];
+      }
+    });
   }
 
   Future<void> _loadBrewingResults() async {
@@ -48,35 +59,43 @@ class _JournalScreenState extends State<JournalScreen> {
         itemBuilder: (context, index) {
           final result = _brewingResults[index];
           double overall = calculateOverallRating(result);
+          // Get method name from map or use legacy method field or fallback
+          String methodName = '';
+          if (result['method_id'] != null) {
+            methodName = _methodNames[result['method_id']] ?? l10n.method;
+          } else if (result['method'] != null) {
+            methodName = result['method'];
+          } else {
+            methodName = l10n.method;
+          }
+
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: ListTile(
-              leading:
-                  result['imagePath'] != null
-                      ? Image.file(
-                        File(result['imagePath']),
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      )
-                      : const Icon(Icons.local_cafe),
-              title: Text(result['method']),
+              leading: result['imagePath'] != null
+                  ? Image.file(
+                      File(result['imagePath']),
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(Icons.local_cafe),
+              title: Text(methodName),
               subtitle: FutureBuilder<Map<String, dynamic>?>(
-                future:
-                    result['recipeId'] != null
-                        ? DBHelper().getRecipeById(result['recipeId'])
-                        : Future.value(null),
+                future: result['recipeId'] != null
+                    ? DBHelper().getRecipeById(result['recipeId'])
+                    : Future.value(null),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Text('Загрузка рецепта...');
+                    return Text(l10n.loadingRecipe);
                   } else if (snapshot.hasData && snapshot.data != null) {
                     return Text(
-                      'Рецепт: ${snapshot.data!['name']}\n'
-                      'Кофе: ${result['coffeeGrams']} г, Вода: ${result['waterVolume']} мл, Темп: ${result['temperature']}°C',
+                      '${l10n.recipe}: ${snapshot.data!['name']}\n'
+                      '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.temperature}: ${result['temperature']}°C',
                     );
                   } else {
                     return Text(
-                      'Кофе: ${result['coffeeGrams']} г, Вода: ${result['waterVolume']} мл, Темп: ${result['temperature']}°C',
+                      '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.temperature}: ${result['temperature']}°C',
                     );
                   }
                 },
@@ -86,9 +105,8 @@ class _JournalScreenState extends State<JournalScreen> {
                 final shouldReload = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            EntryDetailScreen(entry: _brewingResults[index]),
+                    builder: (context) =>
+                        EntryDetailScreen(entry: _brewingResults[index]),
                   ),
                 );
                 if (shouldReload == true) {

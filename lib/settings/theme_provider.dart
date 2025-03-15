@@ -27,4 +27,4 @@ class ThemeProvider extends ChangeNotifier {
     await _prefs.setString(_themeKey, mode.toString());
     notifyListeners();
   }
-} 
+}

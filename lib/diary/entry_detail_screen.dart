@@ -35,23 +35,22 @@ class EntryDetailScreen extends StatelessWidget {
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Удалить запись?'),
-                      content: const Text(
-                        'Вы уверены, что хотите удалить эту запись?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Нет'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Да'),
-                        ),
-                      ],
+                builder: (context) => AlertDialog(
+                  title: const Text('Удалить запись?'),
+                  content: const Text(
+                    'Вы уверены, что хотите удалить эту запись?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Нет'),
                     ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Да'),
+                    ),
+                  ],
+                ),
               );
               if (confirm == true) {
                 await DBHelper().deleteBrewingResult(entry['id']);
@@ -90,10 +89,9 @@ class EntryDetailScreen extends StatelessWidget {
                 ),
               ),
             FutureBuilder<Map<String, dynamic>?>(
-              future:
-                  entry['recipeId'] != null
-                      ? DBHelper().getRecipeById(entry['recipeId'])
-                      : Future.value(null),
+              future: entry['recipeId'] != null
+                  ? DBHelper().getRecipeById(entry['recipeId'])
+                  : Future.value(null),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Text('Загрузка рецепта...');

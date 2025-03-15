@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../db/db_helper.dart';
 import 'add_edit_recipe_screen.dart';
@@ -20,6 +20,7 @@ class RecipeDetailScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.play_arrow),
+            tooltip: l10n.startBrewing,
             onPressed: () {
               if (recipe['instructions'] != null &&
                   recipe['instructions'].toString().trim().isNotEmpty) {
@@ -31,8 +32,8 @@ class RecipeDetailScreen extends StatelessWidget {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Нет инструкций для данного рецепта'),
+                  SnackBar(
+                    content: Text(l10n.noInstructionsForRecipe),
                   ),
                 );
               }
@@ -40,86 +41,193 @@ class RecipeDetailScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.share),
+            tooltip: l10n.shareRecipe,
             onPressed: () {
-              final shareContent =
-                  "Рецепт: ${recipe['name']}\n"
-                  "Описание: ${recipe['description']}\n"
-                  "Инструкции: ${recipe['instructions']}";
+              final shareContent = "${l10n.recipe}: ${recipe['name']}\n"
+                  "${l10n.description}: ${recipe['description'] ?? l10n.notSpecified}\n"
+                  "${l10n.brewingMethod}: ${_getMethodName(recipe, context)}\n"
+                  "${l10n.grindSize}: ${_getGrindSizeName(recipe)}\n"
+                  "${l10n.coffee}: ${recipe['coffee_grams'] ?? l10n.notSpecified} ${l10n.g}\n"
+                  "${l10n.water}: ${recipe['water_volume'] ?? l10n.notSpecified} ${l10n.ml}\n"
+                  "${l10n.waterTemperature}: ${recipe['water_temperature'] ?? l10n.notSpecified}°C\n"
+                  "${l10n.method}: ${recipe['instructions']}";
               Share.share(shareContent, subject: recipe['name']);
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: Text(l10n.deleteRecipe),
-                      content: Text(l10n.deleteRecipe),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(l10n.no),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(l10n.yes),
-                        ),
-                      ],
-                    ),
-              );
-              if (confirm == true) {
-                await DBHelper().deleteRecipe(recipe['id']);
-                Navigator.pop(context, true);
-              }
-            },
+            tooltip: l10n.delete,
+            onPressed: () => _confirmDelete(context),
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: ListView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Recipe Name
             Text(
-              'Название: ${recipe['name']}',
+              recipe['name'],
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+
+            const SizedBox(height: 24),
+
+            // Recipe Details Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Brew Method Section
+                    FutureBuilder<String>(
+                      future: _getMethodName(recipe, context),
+                      builder: (context, snapshot) {
+                        return _buildDetailRow(
+                          l10n.brewingMethod,
+                          snapshot.connectionState == ConnectionState.waiting
+                              ? l10n.loading
+                              : snapshot.data ?? l10n.notSpecified,
+                          Icons.coffee,
+                        );
+                      },
+                    ),
+
+                    const Divider(),
+
+                    // Grind Size
+                    _buildDetailRow(
+                      l10n.grindSize,
+                      _getGrindSizeName(recipe),
+                      Icons.grain,
+                    ),
+
+                    const Divider(),
+
+                    // Parameters (coffee, water, temperature)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDetailRow(
+                            l10n.coffee,
+                            recipe['coffee_grams'] != null
+                                ? '${recipe['coffee_grams']} ${l10n.g}'
+                                : l10n.notSpecified,
+                            Icons.coffee_maker,
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildDetailRow(
+                            l10n.water,
+                            recipe['water_volume'] != null
+                                ? '${recipe['water_volume']} ${l10n.ml}'
+                                : l10n.notSpecified,
+                            Icons.water_drop,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Divider(),
+
+                    _buildDetailRow(
+                      l10n.temperature,
+                      recipe['water_temperature'] != null
+                          ? '${recipe['water_temperature']}${l10n.celsius}'
+                          : l10n.notSpecified,
+                      Icons.thermostat,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Description Section
+            if (recipe['description'] != null &&
+                recipe['description'].toString().trim().isNotEmpty) ...[
+              Text(
+                l10n.description,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Text(recipe['description']),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Instructions Section
+            Text(
+              l10n.method,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('Описание: ${recipe['description']}'),
-            const SizedBox(height: 8),
-            Text('Инструкции: ${recipe['instructions']}'),
-            const Divider(),
-            FutureBuilder<Map<String, dynamic>?>(
-              future:
-                  recipe['grinderId'] != null
-                      ? DBHelper().getGrinderById(recipe['grinderId'])
-                      : Future.value(null),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Загрузка кофемолки...');
-                } else if (snapshot.hasData && snapshot.data != null) {
-                  final grinder = snapshot.data!;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Кофемолка: ${grinder['name']}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(recipe['instructions'] ?? l10n.noInstructions),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Brew Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  if (recipe['instructions'] != null &&
+                      recipe['instructions'].toString().trim().isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BrewGuideScreen(recipe: recipe),
                       ),
-                      Text('Настройки: ${grinder['settings']}'),
-                    ],
-                  );
-                } else {
-                  return const Text('Кофемолка не выбрана');
-                }
-              },
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.noInstructionsForRecipe),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.play_arrow),
+                label: Text(l10n.startBrewingButton),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.edit),
         onPressed: () async {
           final updatedRecipe = await Navigator.push(
             context,
@@ -131,7 +239,85 @@ class RecipeDetailScreen extends StatelessWidget {
             Navigator.pop(context, true);
           }
         },
+        child: const Icon(Icons.edit),
       ),
     );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getGrindSizeName(Map<String, dynamic> recipe) {
+    final grindSize = recipe['grind_size'];
+    if (grindSize == null) return 'Not specified';
+
+    return DBHelper.GRIND_SIZE_NAMES[grindSize] ?? grindSize;
+  }
+
+  Future<String> _getMethodName(
+      Map<String, dynamic> recipe, BuildContext context) async {
+    final methodId = recipe['method_id'];
+    if (methodId == null) return 'Not specified';
+
+    final method = await DBHelper().getMethodById(methodId);
+    return method?['name'] ?? 'Unknown method';
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteRecipe),
+        content: Text(
+          'Are you sure you want to delete "${recipe['name']}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.no),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.yes),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await DBHelper().deleteRecipe(recipe['id']);
+      Navigator.pop(context, true);
+    }
   }
 }

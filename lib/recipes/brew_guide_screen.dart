@@ -18,29 +18,12 @@ class _BrewGuideScreenState extends State<BrewGuideScreen> {
   @override
   void initState() {
     super.initState();
-    steps =
-        widget.recipe['instructions']
-            .toString()
-            .split('\n')
-            .where((s) => s.trim().isNotEmpty)
-            .toList();
+    steps = widget.recipe['instructions']
+        .toString()
+        .split('\n')
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
     _pageController = PageController();
-  }
-
-  void _goToNextStep() {
-    if (currentStepIndex < steps.length - 1) {
-      setState(() {
-        currentStepIndex++;
-      });
-    }
-  }
-
-  void _goToPreviousStep() {
-    if (currentStepIndex > 0) {
-      setState(() {
-        currentStepIndex--;
-      });
-    }
   }
 
   @override
@@ -91,7 +74,9 @@ class _BrewGuideScreenState extends State<BrewGuideScreen> {
                       );
                     },
                     child: Text(l10n.back),
-                  ),
+                  )
+                else
+                  const SizedBox.shrink(),
                 if (currentStepIndex < steps.length - 1)
                   ElevatedButton(
                     onPressed: () {

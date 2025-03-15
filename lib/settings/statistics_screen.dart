@@ -51,26 +51,25 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.statistics)),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Всего записей: $totalBrews',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Средний общий рейтинг: ${averageRating.toStringAsFixed(1)}',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Всего записей: $totalBrews',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Средний общий рейтинг: ${averageRating.toStringAsFixed(1)}',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ],
               ),
+            ),
     );
   }
 }

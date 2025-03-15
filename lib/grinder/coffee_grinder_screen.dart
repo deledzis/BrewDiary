@@ -13,6 +13,8 @@ class CoffeeGrinderScreen extends StatefulWidget {
 
 class _CoffeeGrinderScreenState extends State<CoffeeGrinderScreen> {
   List<Map<String, dynamic>> _grinders = [];
+  final Map<int, int> _clickSettingsCount = {};
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -21,9 +23,24 @@ class _CoffeeGrinderScreenState extends State<CoffeeGrinderScreen> {
   }
 
   Future<void> _loadGrinders() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final grinders = await DBHelper().getGrinders();
+
+    // Count click settings for each grinder
+    for (var grinder in grinders) {
+      if (grinder['id'] != null) {
+        final settings =
+            await DBHelper().getGrinderClickSettings(grinder['id']);
+        _clickSettingsCount[grinder['id']] = settings.length;
+      }
+    }
+
     setState(() {
       _grinders = grinders;
+      _isLoading = false;
     });
   }
 
@@ -32,41 +49,127 @@ class _CoffeeGrinderScreenState extends State<CoffeeGrinderScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.grinders)),
-      body: ListView.builder(
-        itemCount: _grinders.length,
-        itemBuilder: (context, index) {
-          final grinder = _grinders[index];
-          return ListTile(
-            title: Text(grinder['name']),
-            subtitle: Text(grinder['settings'] ?? ''),
-            onTap: () async {
-              final shouldReload = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddEditGrinderScreen(grinder: grinder),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _grinders.isEmpty
+              ? Center(
+                  child: Text(l10n.noGrinder),
+                )
+              : ListView.builder(
+                  itemCount: _grinders.length,
+                  itemBuilder: (context, index) {
+                    final grinder = _grinders[index];
+                    final settingsCount =
+                        _clickSettingsCount[grinder['id']] ?? 0;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        leading: const Icon(Icons.coffee_maker),
+                        title: Text(grinder['name']),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (grinder['notes'] != null &&
+                                grinder['notes'].toString().isNotEmpty)
+                              Text(
+                                grinder['notes'],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            Text(
+                              settingsCount > 0
+                                  ? '$settingsCount ${settingsCount > 1 ? "grind sizes" : "grind size"} configured'
+                                  : 'No grind settings defined',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddEditGrinderScreen(
+                                      grinder: grinder,
+                                    ),
+                                  ),
+                                );
+                                if (result == true) {
+                                  _loadGrinders();
+                                }
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _confirmDelete(grinder),
+                            ),
+                          ],
+                        ),
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddEditGrinderScreen(
+                                grinder: grinder,
+                              ),
+                            ),
+                          );
+                          if (result == true) {
+                            _loadGrinders();
+                          }
+                        },
+                      ),
+                    );
+                  },
                 ),
-              );
-              if (shouldReload == true) {
-                _loadGrinders();
-              }
-            },
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
-          final newGrinder = await Navigator.push(
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddEditGrinderScreen(),
             ),
           );
-          if (newGrinder != null) {
+          if (result == true) {
             _loadGrinders();
           }
         },
       ),
     );
+  }
+
+  Future<void> _confirmDelete(Map<String, dynamic> grinder) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${grinder['name']}?'),
+        content: Text(
+            'This will permanently delete this grinder and all its settings.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await DBHelper().deleteGrinder(grinder['id']);
+      _loadGrinders();
+    }
   }
 }

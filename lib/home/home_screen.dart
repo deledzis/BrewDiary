@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.appTitle)),
       body: _pages[_currentIndex],
@@ -35,7 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         items: [
-          BottomNavigationBarItem(icon: const Icon(Icons.book), label: l10n.diary),
+          BottomNavigationBarItem(
+              icon: const Icon(Icons.book), label: l10n.diary),
           BottomNavigationBarItem(
             icon: const Icon(Icons.receipt_long),
             label: l10n.recipes,
