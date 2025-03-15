@@ -66,7 +66,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
         }
       } catch (e) {
         // Handle error
-        print('Error loading grinder settings: $e');
+        debugPrint('Error loading grinder settings: $e');
       }
     }
 
@@ -190,7 +190,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
         ],
       ),

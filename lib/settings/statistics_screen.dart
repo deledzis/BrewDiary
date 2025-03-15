@@ -59,12 +59,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Всего записей: $totalBrews',
+                    '${l10n.totalEntries}$totalBrews',
                     style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Средний общий рейтинг: ${averageRating.toStringAsFixed(1)}',
+                    '${l10n.averageRating}${averageRating.toStringAsFixed(1)}',
                     style: const TextStyle(fontSize: 18),
                   ),
                 ],

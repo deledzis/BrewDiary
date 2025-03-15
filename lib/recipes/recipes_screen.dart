@@ -76,7 +76,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                         '${recipe['coffee_grams'] != null ? "${l10n.coffeeAmount}: ${recipe['coffee_grams']} ${l10n.g}" : ""}'
                         '${recipe['coffee_grams'] != null && recipe['water_volume'] != null ? ", " : ""}'
                         '${recipe['water_volume'] != null ? "${l10n.waterAmount}: ${recipe['water_volume']} ${l10n.ml}" : ""}'
-                        '${recipe['water_temperature'] != null ? ", ${l10n.temperature}: ${recipe['water_temperature']}°C" : ""}'),
+                        '${recipe['water_temperature'] != null ? ", ${l10n.waterTemperature}: ${recipe['water_temperature']}°C" : ""}'),
                 ],
               ),
               trailing: recipe['is_favorite'] == 1

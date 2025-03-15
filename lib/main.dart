@@ -67,8 +67,11 @@ class BrewDiaryApp extends StatelessWidget {
             ],
             supportedLocales: const [
               Locale('en'), // English
-              Locale('es'), // Spanish
               Locale('ru'), // Russian
+              Locale('es'), // Spanish
+              Locale('de'), // German
+              Locale('ja'), // Japanese
+              Locale('zh'), // Chinese
             ],
             home: const MainScreen(),
           );

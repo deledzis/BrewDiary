@@ -28,7 +28,7 @@ class RecipeDetailScreen extends StatelessWidget {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.noInstructionsForRecipe),
+              content: Text(l10n.noInstructions),
             ),
           );
         }
@@ -49,7 +49,7 @@ class RecipeDetailScreen extends StatelessWidget {
             "${l10n.coffee}: ${recipe['coffee_grams'] ?? l10n.notSpecified} ${l10n.g}\n"
             "${l10n.water}: ${recipe['water_volume'] ?? l10n.notSpecified} ${l10n.ml}\n"
             "${l10n.waterTemperature}: ${recipe['water_temperature'] ?? l10n.notSpecified}°C\n"
-            "${l10n.method}: ${recipe['instructions']}";
+            "${l10n.brewingMethod}: ${recipe['instructions']}";
         Share.share(shareContent, subject: recipe['name']);
       },
     );
@@ -164,7 +164,7 @@ class RecipeDetailScreen extends StatelessWidget {
                 ),
                 Expanded(
                   child: _buildDetailRowItem(
-                    l10n.temperature,
+                    l10n.waterTemperature,
                     recipe['water_temperature'] != null
                         ? '${recipe['water_temperature']}${l10n.celsius}'
                         : l10n.notSpecified,
@@ -229,7 +229,7 @@ class RecipeDetailScreen extends StatelessWidget {
 
             // Instructions Section
             Text(
-              l10n.method,
+              l10n.brewingMethod,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -265,7 +265,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(l10n.noInstructionsForRecipe),
+                        content: Text(l10n.noInstructions),
                       ),
                     );
                   }

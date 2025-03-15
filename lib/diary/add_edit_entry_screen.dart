@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../db/db_helper.dart';
@@ -159,7 +160,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     );
   }
 
-  Widget _buildRecipeDropdown() {
+  Widget _buildRecipeDropdown(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isRecipesLoading) {
       return Container(
         decoration: BoxDecoration(
@@ -177,7 +179,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text('Загрузка рецептов...'),
+            Text(l10n.loadingRecipe),
           ],
         ),
       );
@@ -201,11 +203,10 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
         child: DropdownButton<int?>(
           isExpanded: true,
           value: _selectedRecipeId,
-          hint: const Text('Выберите рецепт'),
           items: [
-            const DropdownMenuItem<int?>(
+            DropdownMenuItem<int?>(
               value: null,
-              child: Text('Нет рецепта'),
+              child: Text(l10n.noRecipeSelected),
             ),
             ...uniqueRecipesList.map((recipe) {
               return DropdownMenuItem<int?>(
@@ -224,12 +225,13 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildImageSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Изображение записи:',
+        Text(
+          l10n.coverPhoto,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -238,21 +240,21 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
         const SizedBox(height: 8),
         _imagePath != null
             ? Image.file(File(_imagePath!), height: 150)
-            : const Text('Изображение не выбрано'),
+            : Text(l10n.notSelected),
         const SizedBox(height: 8),
         Row(
           children: [
             ElevatedButton.icon(
               onPressed: _pickImage,
               icon: const Icon(Icons.image),
-              label: const Text('Добавить/Заменить'),
+              label: Text(l10n.addReplace),
             ),
             const SizedBox(width: 16),
             if (_imagePath != null)
               ElevatedButton.icon(
                 onPressed: _removeImage,
                 icon: const Icon(Icons.delete),
-                label: const Text('Удалить'),
+                label: Text(l10n.delete),
               ),
           ],
         ),
@@ -262,10 +264,10 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            widget.entry == null ? 'Добавить запись' : 'Редактировать запись'),
+        title: Text(widget.entry == null ? l10n.addEntry : l10n.editEntry),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -281,8 +283,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Brewing method
-              const Text(
-                'Метод заваривания',
+              Text(
+                l10n.brewingMethod,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -295,31 +297,31 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  hintText: 'Введите метод заваривания',
+                  hintText: l10n.enterBrewingMethod,
                 ),
                 validator: (value) => value == null || value.isEmpty
-                    ? 'Введите метод заваривания'
+                    ? l10n.enterBrewingMethod
                     : null,
               ),
 
               const SizedBox(height: 24),
 
               // Recipe selection
-              const Text(
-                'Связать с рецептом',
+              Text(
+                l10n.linkRecipe,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              _buildRecipeDropdown(),
+              _buildRecipeDropdown(context),
 
               const SizedBox(height: 24),
 
               // Brewing parameters
-              const Text(
-                'Параметры заваривания',
+              Text(
+                l10n.brewingParameters,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -335,8 +337,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Кофе',
+                        Text(
+                          l10n.coffee,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -351,11 +353,11 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                           child: TextField(
                             controller: _coffeeGramsController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 12),
                               border: InputBorder.none,
-                              suffixText: 'г',
+                              suffixText: l10n.g,
                             ),
                           ),
                         ),
@@ -368,8 +370,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Вода',
+                        Text(
+                          l10n.water,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -384,11 +386,11 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                           child: TextField(
                             controller: _waterVolumeController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 12),
                               border: InputBorder.none,
-                              suffixText: 'мл',
+                              suffixText: l10n.ml,
                             ),
                           ),
                         ),
@@ -404,8 +406,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Температура воды',
+                  Text(
+                    l10n.waterTemperature,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -420,11 +422,11 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                     child: TextField(
                       controller: _temperatureController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         contentPadding:
                             EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         border: InputBorder.none,
-                        suffixText: '°C',
+                        suffixText: l10n.celsius,
                       ),
                     ),
                   ),
@@ -434,8 +436,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
               const SizedBox(height: 24),
 
               // Taste attributes section
-              const Text(
-                'Вкусовые характеристики',
+              Text(
+                l10n.tasteCharacteristics,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -443,22 +445,22 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
               ),
               const SizedBox(height: 16),
               _buildSlider(
-                'Аромат',
+                l10n.aroma,
                 _aroma,
                 (value) => setState(() => _aroma = value),
               ),
               _buildSlider(
-                'Кислотность',
+                l10n.acidity,
                 _acidity,
                 (value) => setState(() => _acidity = value),
               ),
               _buildSlider(
-                'Сладость',
+                l10n.sweetness,
                 _sweetness,
                 (value) => setState(() => _sweetness = value),
               ),
               _buildSlider(
-                'Тело напитка',
+                l10n.body,
                 _body,
                 (value) => setState(() => _body = value),
               ),
@@ -466,13 +468,13 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
               const SizedBox(height: 24),
 
               // Image section
-              _buildImageSection(),
+              _buildImageSection(context),
 
               const SizedBox(height: 24),
 
               // Notes section
-              const Text(
-                'Заметки',
+              Text(
+                l10n.remarks,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -486,7 +488,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  hintText: 'Введите заметки...',
+                  hintText: l10n.enterRemarks,
                 ),
               ),
 
@@ -500,8 +502,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child:
-                      const Text('Сохранить', style: TextStyle(fontSize: 16)),
+                  child: Text(l10n.save, style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],

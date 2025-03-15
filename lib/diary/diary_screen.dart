@@ -65,7 +65,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text("Загрузка записей..."),
+            Text(l10n.loadingEntries),
           ],
         ),
       );
@@ -78,7 +78,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             children: [
               const Icon(Icons.receipt_long, size: 100, color: Colors.grey),
               const SizedBox(height: 16),
-              Text("Записей пока нет", style: const TextStyle(fontSize: 18)),
+              Text(l10n.noEntries, style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
@@ -106,11 +106,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
           double overall = calculateOverallRating(result);
           String methodName = '';
           if (result['method_id'] != null) {
-            methodName = _methodNames[result['method_id']] ?? l10n.method;
+            methodName =
+                _methodNames[result['method_id']] ?? l10n.brewingMethod;
           } else if (result['method'] != null) {
             methodName = result['method'];
           } else {
-            methodName = l10n.method;
+            methodName = l10n.brewingMethod;
           }
 
           return Card(
@@ -135,11 +136,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   } else if (snapshot.hasData && snapshot.data != null) {
                     return Text(
                       '${l10n.recipe}: ${snapshot.data!['name']}\n'
-                      '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.temperature}: ${result['temperature']}°C',
+                      '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.waterTemperature}: ${result['temperature']}°C',
                     );
                   } else {
                     return Text(
-                      '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.temperature}: ${result['temperature']}°C',
+                      '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.waterTemperature}: ${result['temperature']}°C',
                     );
                   }
                 },

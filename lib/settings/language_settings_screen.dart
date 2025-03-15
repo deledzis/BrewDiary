@@ -14,7 +14,7 @@ class LanguageSettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Language Settings'),
+        title: Text(l10n.languageSettings),
       ),
       body: ListView(
         children: [
@@ -51,6 +51,36 @@ class LanguageSettingsScreen extends StatelessWidget {
           RadioListTile<String>(
             title: const Text('Español'),
             value: 'es',
+            groupValue: languageProvider.languageCode,
+            onChanged: (value) {
+              if (value != null) {
+                languageProvider.setLanguageCode(value);
+              }
+            },
+          ),
+          RadioListTile<String>(
+            title: const Text('Deutsch'),
+            value: 'de',
+            groupValue: languageProvider.languageCode,
+            onChanged: (value) {
+              if (value != null) {
+                languageProvider.setLanguageCode(value);
+              }
+            },
+          ),
+          RadioListTile<String>(
+            title: const Text('简体'),
+            value: 'zh',
+            groupValue: languageProvider.languageCode,
+            onChanged: (value) {
+              if (value != null) {
+                languageProvider.setLanguageCode(value);
+              }
+            },
+          ),
+          RadioListTile<String>(
+            title: const Text('日语'),
+            value: 'ja',
             groupValue: languageProvider.languageCode,
             onChanged: (value) {
               if (value != null) {

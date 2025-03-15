@@ -200,7 +200,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                           items: [
                             DropdownMenuItem<int?>(
                               value: null,
-                              child: Text(l10n.none),
+                              child: Text(l10n.no),
                             ),
                             ..._brewingMethods.map((method) {
                               return DropdownMenuItem<int?>(
@@ -413,7 +413,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
 
               // Instructions Section
               Text(
-                l10n.method,
+                l10n.brewingMethod,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
