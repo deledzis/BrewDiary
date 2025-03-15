@@ -118,7 +118,6 @@ class DBHelper {
     );
   }
 
-  // Click settings methods
   Future<int> saveGrinderClickSetting(Map<String, dynamic> setting) async {
     final db = await database;
 
@@ -145,7 +144,6 @@ class DBHelper {
         where: 'grinder_id = ?', whereArgs: [grinderId], orderBy: 'grind_size');
   }
 
-  // Methods table operations
   Future<int> insertMethod(Map<String, dynamic> method) async {
     final db = await database;
     return await db.insert('brewing_methods', method);
@@ -169,7 +167,6 @@ class DBHelper {
     return null;
   }
 
-  // Grinder settings operations (old method-based settings)
   Future<int> insertGrinderSetting(Map<String, dynamic> setting) async {
     final db = await database;
     return await db.insert('grinder_settings', setting);
@@ -207,7 +204,6 @@ class DBHelper {
     return await db.query('brewing_results', orderBy: 'timestamp DESC');
   }
 
-  // Обновление записи
   Future<int> updateBrewingResult(Map<String, dynamic> entry) async {
     final db = await database;
     return await db.update(
@@ -218,7 +214,6 @@ class DBHelper {
     );
   }
 
-  // Удаление записи
   Future<int> deleteBrewingResult(int id) async {
     final db = await database;
     return await db.delete('brewing_results', where: 'id = ?', whereArgs: [id]);
