@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:brew_diary/settings/language_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -8,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'home/home_screen.dart';
+import 'main_screen.dart';
 import 'settings/theme_provider.dart';
 
 void main() async {
@@ -30,25 +31,34 @@ class BrewDiaryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeProvider(prefs),
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => ThemeProvider(prefs),
+        ),
+        ChangeNotifierProvider<LanguageProvider>(
+          create: (_) => LanguageProvider(prefs),
+        ),
+      ],
+      child: Consumer2<ThemeProvider, LanguageProvider>(
+        builder: (context, themeProvider, languageProvider, child) {
           return MaterialApp(
-            title: 'BrewDiary',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
               useMaterial3: true,
             ),
             darkTheme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.brown,
+                seedColor: Colors.indigo,
                 brightness: Brightness.dark,
               ),
               useMaterial3: true,
             ),
             themeMode: themeProvider.themeMode,
+            locale: languageProvider.languageCode == 'system'
+                ? null
+                : Locale(languageProvider.languageCode),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -60,7 +70,7 @@ class BrewDiaryApp extends StatelessWidget {
               Locale('es'), // Spanish
               Locale('ru'), // Russian
             ],
-            home: const HomeScreen(),
+            home: const MainScreen(),
           );
         },
       ),

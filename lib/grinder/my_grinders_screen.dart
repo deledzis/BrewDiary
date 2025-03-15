@@ -4,14 +4,14 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../db/db_helper.dart';
 import 'add_edit_grinder_screen.dart';
 
-class CoffeeGrinderScreen extends StatefulWidget {
-  const CoffeeGrinderScreen({super.key});
+class MyGrindersScreen extends StatefulWidget {
+  const MyGrindersScreen({super.key});
 
   @override
-  _CoffeeGrinderScreenState createState() => _CoffeeGrinderScreenState();
+  _MyGrindersScreenState createState() => _MyGrindersScreenState();
 }
 
-class _CoffeeGrinderScreenState extends State<CoffeeGrinderScreen> {
+class _MyGrindersScreenState extends State<MyGrindersScreen> {
   List<Map<String, dynamic>> _grinders = [];
   final Map<int, int> _clickSettingsCount = {};
   bool _isLoading = true;

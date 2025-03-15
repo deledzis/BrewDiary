@@ -1,22 +1,23 @@
 import 'dart:io';
 
-import 'package:brew_diary/diary/add_edit_entry_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
-import '../diary/entry_detail_screen.dart';
+import 'add_edit_entry_screen.dart';
+import 'entry_detail_screen.dart';
 
-class JournalScreen extends StatefulWidget {
-  const JournalScreen({super.key});
+class DiaryScreen extends StatefulWidget {
+  const DiaryScreen({super.key});
 
   @override
-  _JournalScreenState createState() => _JournalScreenState();
+  _DiaryScreenState createState() => _DiaryScreenState();
 }
 
-class _JournalScreenState extends State<JournalScreen> {
+class _DiaryScreenState extends State<DiaryScreen> {
   List<Map<String, dynamic>> _brewingResults = [];
   final Map<int, String> _methodNames = {};
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -35,9 +36,11 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   Future<void> _loadBrewingResults() async {
+    debugPrint("_loadBrewingResults()");
     final results = await DBHelper().getBrewingResults();
     setState(() {
       _brewingResults = results;
+      _isLoading = false;
     });
   }
 
@@ -52,14 +55,55 @@ class _JournalScreenState extends State<JournalScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.coffeeBrewingDiary)),
-      body: ListView.builder(
+
+    Widget bodyContent;
+
+    if (_isLoading) {
+      bodyContent = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text("Загрузка записей..."),
+          ],
+        ),
+      );
+    } else if (_brewingResults.isEmpty) {
+      bodyContent = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.receipt_long, size: 100, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text("Записей пока нет", style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  final newEntry = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AddEditEntryScreen()),
+                  );
+                  if (newEntry != null) {
+                    await DBHelper().insertBrewingResult(newEntry);
+                    _loadBrewingResults();
+                  }
+                },
+                child: Text(l10n.addEntry),
+              )
+            ],
+          ),
+        ),
+      );
+    } else {
+      bodyContent = ListView.builder(
         itemCount: _brewingResults.length,
         itemBuilder: (context, index) {
           final result = _brewingResults[index];
           double overall = calculateOverallRating(result);
-          // Get method name from map or use legacy method field or fallback
           String methodName = '';
           if (result['method_id'] != null) {
             methodName = _methodNames[result['method_id']] ?? l10n.method;
@@ -116,20 +160,28 @@ class _JournalScreenState extends State<JournalScreen> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newEntry = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddEditEntryScreen()),
-          );
-          if (newEntry != null) {
-            await DBHelper().insertBrewingResult(newEntry);
-            _loadBrewingResults();
-          }
-        },
-        child: const Icon(Icons.add),
-      ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.coffeeBrewingDiary)),
+      body: bodyContent,
+      floatingActionButton: (_isLoading || _brewingResults.isEmpty)
+          ? null
+          : FloatingActionButton(
+              onPressed: () async {
+                final newEntry = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AddEditEntryScreen()),
+                );
+                if (newEntry != null) {
+                  await DBHelper().insertBrewingResult(newEntry);
+                  _loadBrewingResults();
+                }
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }

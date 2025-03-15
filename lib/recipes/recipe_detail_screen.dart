@@ -11,6 +11,174 @@ class RecipeDetailScreen extends StatelessWidget {
 
   const RecipeDetailScreen({super.key, required this.recipe});
 
+  Widget _buildRunInstructionsButtonWidget(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return IconButton(
+      icon: const Icon(Icons.play_arrow),
+      tooltip: l10n.startBrewing,
+      onPressed: () {
+        if (recipe['instructions'] != null &&
+            recipe['instructions'].toString().trim().isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BrewGuideScreen(recipe: recipe),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.noInstructionsForRecipe),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildShareButtonWidget(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return IconButton(
+      icon: const Icon(Icons.share),
+      tooltip: l10n.shareRecipe,
+      onPressed: () {
+        final shareContent = "${l10n.recipe}: ${recipe['name']}\n"
+            "${l10n.description}: ${recipe['description'] ?? l10n.notSpecified}\n"
+            "${l10n.brewingMethod}: ${_getMethodName(recipe, context)}\n"
+            "${l10n.grindSize}: ${_getGrindSizeName(recipe)}\n"
+            "${l10n.coffee}: ${recipe['coffee_grams'] ?? l10n.notSpecified} ${l10n.g}\n"
+            "${l10n.water}: ${recipe['water_volume'] ?? l10n.notSpecified} ${l10n.ml}\n"
+            "${l10n.waterTemperature}: ${recipe['water_temperature'] ?? l10n.notSpecified}°C\n"
+            "${l10n.method}: ${recipe['instructions']}";
+        Share.share(shareContent, subject: recipe['name']);
+      },
+    );
+  }
+
+  Widget _buildDeleteButtonWidget(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return IconButton(
+      icon: const Icon(Icons.delete),
+      tooltip: l10n.delete,
+      onPressed: () => _confirmDelete(context),
+    );
+  }
+
+  Widget _buildRecipeNameWidget(BuildContext context) {
+    return Text(
+      recipe['name'],
+      style: Theme.of(context).textTheme.headlineMedium,
+    );
+  }
+
+  Widget _buildDetailRowItem(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecipeDetailsCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Brew Method Section
+            FutureBuilder<String>(
+              future: _getMethodName(recipe, context),
+              builder: (context, snapshot) {
+                return _buildDetailRowItem(
+                  l10n.brewingMethod,
+                  snapshot.connectionState == ConnectionState.waiting
+                      ? l10n.loading
+                      : snapshot.data ?? l10n.notSpecified,
+                  Icons.coffee,
+                );
+              },
+            ),
+            const Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.coffee,
+                    recipe['coffee_grams'] != null
+                        ? '${recipe['coffee_grams']} ${l10n.g}'
+                        : l10n.notSpecified,
+                    Icons.coffee_maker,
+                  ),
+                ),
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.grindSize,
+                    _getGrindSizeName(recipe),
+                    Icons.grain,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.water,
+                    recipe['water_volume'] != null
+                        ? '${recipe['water_volume']} ${l10n.ml}'
+                        : l10n.notSpecified,
+                    Icons.water_drop,
+                  ),
+                ),
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.temperature,
+                    recipe['water_temperature'] != null
+                        ? '${recipe['water_temperature']}${l10n.celsius}'
+                        : l10n.notSpecified,
+                    Icons.thermostat,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -18,47 +186,9 @@ class RecipeDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(recipe['name']),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.play_arrow),
-            tooltip: l10n.startBrewing,
-            onPressed: () {
-              if (recipe['instructions'] != null &&
-                  recipe['instructions'].toString().trim().isNotEmpty) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BrewGuideScreen(recipe: recipe),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.noInstructionsForRecipe),
-                  ),
-                );
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: l10n.shareRecipe,
-            onPressed: () {
-              final shareContent = "${l10n.recipe}: ${recipe['name']}\n"
-                  "${l10n.description}: ${recipe['description'] ?? l10n.notSpecified}\n"
-                  "${l10n.brewingMethod}: ${_getMethodName(recipe, context)}\n"
-                  "${l10n.grindSize}: ${_getGrindSizeName(recipe)}\n"
-                  "${l10n.coffee}: ${recipe['coffee_grams'] ?? l10n.notSpecified} ${l10n.g}\n"
-                  "${l10n.water}: ${recipe['water_volume'] ?? l10n.notSpecified} ${l10n.ml}\n"
-                  "${l10n.waterTemperature}: ${recipe['water_temperature'] ?? l10n.notSpecified}°C\n"
-                  "${l10n.method}: ${recipe['instructions']}";
-              Share.share(shareContent, subject: recipe['name']);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: l10n.delete,
-            onPressed: () => _confirmDelete(context),
-          ),
+          _buildRunInstructionsButtonWidget(context),
+          _buildShareButtonWidget(context),
+          _buildDeleteButtonWidget(context),
         ],
       ),
       body: SingleChildScrollView(
@@ -67,87 +197,10 @@ class RecipeDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Recipe Name
-            Text(
-              recipe['name'],
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-
+            _buildRecipeNameWidget(context),
             const SizedBox(height: 24),
-
             // Recipe Details Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brew Method Section
-                    FutureBuilder<String>(
-                      future: _getMethodName(recipe, context),
-                      builder: (context, snapshot) {
-                        return _buildDetailRow(
-                          l10n.brewingMethod,
-                          snapshot.connectionState == ConnectionState.waiting
-                              ? l10n.loading
-                              : snapshot.data ?? l10n.notSpecified,
-                          Icons.coffee,
-                        );
-                      },
-                    ),
-
-                    const Divider(),
-
-                    // Grind Size
-                    _buildDetailRow(
-                      l10n.grindSize,
-                      _getGrindSizeName(recipe),
-                      Icons.grain,
-                    ),
-
-                    const Divider(),
-
-                    // Parameters (coffee, water, temperature)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDetailRow(
-                            l10n.coffee,
-                            recipe['coffee_grams'] != null
-                                ? '${recipe['coffee_grams']} ${l10n.g}'
-                                : l10n.notSpecified,
-                            Icons.coffee_maker,
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildDetailRow(
-                            l10n.water,
-                            recipe['water_volume'] != null
-                                ? '${recipe['water_volume']} ${l10n.ml}'
-                                : l10n.notSpecified,
-                            Icons.water_drop,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const Divider(),
-
-                    _buildDetailRow(
-                      l10n.temperature,
-                      recipe['water_temperature'] != null
-                          ? '${recipe['water_temperature']}${l10n.celsius}'
-                          : l10n.notSpecified,
-                      Icons.thermostat,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
+            _buildRecipeDetailsCard(context),
             const SizedBox(height: 24),
 
             // Description Section
@@ -240,39 +293,6 @@ class RecipeDetailScreen extends StatelessWidget {
           }
         },
         child: const Icon(Icons.edit),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey.shade700),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

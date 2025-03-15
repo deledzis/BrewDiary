@@ -56,20 +56,21 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     final methods = await DBHelper().getMethods();
-    
+
     setState(() {
       _brewingMethods = methods;
-      
+
       // Validate if the selected method exists in the loaded methods
       if (_selectedMethodId != null) {
-        final methodExists = _brewingMethods.any((method) => method['id'] == _selectedMethodId);
+        final methodExists =
+            _brewingMethods.any((method) => method['id'] == _selectedMethodId);
         if (!methodExists) {
           _selectedMethodId = null;
         }
       }
-      
+
       _isLoading = false;
     });
   }

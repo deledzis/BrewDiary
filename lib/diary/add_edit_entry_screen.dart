@@ -36,9 +36,10 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize with existing data if editing, or with defaults if adding new
-    _methodController = TextEditingController(text: widget.entry?['method'] ?? '');
+    _methodController =
+        TextEditingController(text: widget.entry?['method'] ?? '');
     _coffeeGramsController = TextEditingController(
       text: widget.entry?['coffeeGrams']?.toString() ?? '',
     );
@@ -48,7 +49,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     _temperatureController = TextEditingController(
       text: widget.entry?['temperature']?.toString() ?? '',
     );
-    _notesController = TextEditingController(text: widget.entry?['notes'] ?? '');
+    _notesController =
+        TextEditingController(text: widget.entry?['notes'] ?? '');
 
     _aroma = widget.entry?['aroma'] as double? ?? 3.0;
     _acidity = widget.entry?['acidity'] as double? ?? 3.0;
@@ -65,18 +67,19 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
       _isRecipesLoading = true;
     });
     final recipes = await DBHelper().getRecipes();
-    
+
     setState(() {
       _recipes = recipes;
-      
+
       // Validate if the selected recipe exists in the loaded recipes
       if (_selectedRecipeId != null) {
-        final recipeExists = _recipes.any((recipe) => recipe['id'] == _selectedRecipeId);
+        final recipeExists =
+            _recipes.any((recipe) => recipe['id'] == _selectedRecipeId);
         if (!recipeExists) {
           _selectedRecipeId = null;
         }
       }
-      
+
       _isRecipesLoading = false;
     });
   }
@@ -130,7 +133,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
         await DBHelper().updateBrewingResult(entryData);
       }
       // If adding a new entry - just return data to caller
-      
+
       Navigator.of(context).pop(entryData);
     }
   }
@@ -261,7 +264,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.entry == null ? 'Добавить запись' : 'Редактировать запись'),
+        title: Text(
+            widget.entry == null ? 'Добавить запись' : 'Редактировать запись'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -417,8 +421,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                       controller: _temperatureController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 12),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         border: InputBorder.none,
                         suffixText: '°C',
                       ),
@@ -496,7 +500,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Сохранить', style: TextStyle(fontSize: 16)),
+                  child:
+                      const Text('Сохранить', style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],
@@ -505,4 +510,4 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
       ),
     );
   }
-} 
+}
