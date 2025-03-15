@@ -26,6 +26,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
   String? _selectedGrindSize;
   int? _selectedMethodId;
   List<Map<String, dynamic>> _brewingMethods = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -52,9 +53,24 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
   }
 
   Future<void> _loadBrewingMethods() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
     final methods = await DBHelper().getMethods();
+    
     setState(() {
       _brewingMethods = methods;
+      
+      // Validate if the selected method exists in the loaded methods
+      if (_selectedMethodId != null) {
+        final methodExists = _brewingMethods.any((method) => method['id'] == _selectedMethodId);
+        if (!methodExists) {
+          _selectedMethodId = null;
+        }
+      }
+      
+      _isLoading = false;
     });
   }
 
@@ -157,30 +173,48 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
-                    isExpanded: true,
-                    value: _selectedMethodId,
-                    hint: Text(l10n.selectMethod),
-                    items: [
-                      DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text(l10n.none),
+                child: _isLoading
+                    ? Container(
+                        height: 48,
+                        alignment: Alignment.centerLeft,
+                        child: const Row(
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text('Loading...'),
+                          ],
+                        ),
+                      )
+                    : DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          isExpanded: true,
+                          value: _selectedMethodId,
+                          hint: Text(l10n.selectMethod),
+                          items: [
+                            DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text(l10n.none),
+                            ),
+                            ..._brewingMethods.map((method) {
+                              return DropdownMenuItem<int?>(
+                                value: method['id'] as int,
+                                child: Text(method['name']),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedMethodId = value;
+                            });
+                          },
+                        ),
                       ),
-                      ..._brewingMethods.map((method) {
-                        return DropdownMenuItem<int?>(
-                          value: method['id'] as int,
-                          child: Text(method['name']),
-                        );
-                      }),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedMethodId = value;
-                      });
-                    },
-                  ),
-                ),
               ),
 
               const SizedBox(height: 24),

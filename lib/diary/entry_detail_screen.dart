@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../db/db_helper.dart';
-import 'edit_entry_screen.dart';
+import 'add_edit_entry_screen.dart';
 
 class EntryDetailScreen extends StatelessWidget {
   final Map<String, dynamic> entry;
@@ -120,7 +120,7 @@ class EntryDetailScreen extends StatelessWidget {
           final updatedEntry = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EditEntryScreen(entry: entry),
+              builder: (context) => AddEditEntryScreen(entry: entry),
             ),
           );
           if (updatedEntry != null) {

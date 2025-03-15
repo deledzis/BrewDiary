@@ -1,10 +1,10 @@
 import 'dart:io';
 
+import 'package:brew_diary/diary/add_edit_entry_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
-import '../diary/add_entry_screen.dart';
 import '../diary/entry_detail_screen.dart';
 
 class JournalScreen extends StatefulWidget {
@@ -121,7 +121,7 @@ class _JournalScreenState extends State<JournalScreen> {
         onPressed: () async {
           final newEntry = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddEntryScreen()),
+            MaterialPageRoute(builder: (context) => const AddEditEntryScreen()),
           );
           if (newEntry != null) {
             await DBHelper().insertBrewingResult(newEntry);
