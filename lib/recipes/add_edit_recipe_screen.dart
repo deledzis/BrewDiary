@@ -25,9 +25,10 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
   late TextEditingController _waterVolumeController;
   late TextEditingController _waterTemperatureController;
 
-  String? _selectedGrindSize;
+  int? _selectedGrindSizeId;
   int? _selectedMethodId;
   List<Map<String, dynamic>> _brewingMethods = [];
+  List<Map<String, dynamic>> _grindSizes = [];
   bool _isLoading = true;
 
   @override
@@ -46,7 +47,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
         text: widget.recipe?['water_volume']?.toString() ?? '');
     _waterTemperatureController = TextEditingController(
         text: widget.recipe?['water_temperature']?.toString() ?? '');
-    _selectedGrindSize = widget.recipe?['grind_size'];
+    _selectedGrindSizeId = widget.recipe?['grind_size_id'];
     _selectedMethodId = widget.recipe?['method_id'];
     _loadBrewingMethods();
   }
@@ -70,9 +71,28 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
               "Selected method ID not found. Resetting _selectedMethodId.");
         }
       }
-      _isLoading = false;
       debugPrint("Brewing methods loaded: ${_brewingMethods.length}");
     });
+    _loadGrindSizes();
+  }
+
+  Future<void> _loadGrindSizes() async {
+    debugPrint("Loading grind sizes from DB");
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final grindSizes = await DBHelper().getGrindSizes();
+      setState(() {
+        _grindSizes = grindSizes;
+        debugPrint("Grind sizes loaded: ${_grindSizes.length}");
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Handle error
+      debugPrint('Error loading grind sizes: $e');
+    }
   }
 
   @override
@@ -94,7 +114,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
         'name': _nameController.text,
         'description': _descriptionController.text,
         'instructions': _instructionsController.text,
-        'grind_size': _selectedGrindSize,
+        'grind_size_id': _selectedGrindSizeId,
         'method_id': _selectedMethodId,
         'coffee_grams': _coffeeGramsController.text.isNotEmpty
             ? int.parse(_coffeeGramsController.text)
@@ -223,26 +243,26 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<String?>(
+            child: DropdownButton<int?>(
               isExpanded: true,
-              value: _selectedGrindSize,
+              value: _selectedGrindSizeId,
               hint: Text(l10n.selectGrindSize),
               items: [
-                DropdownMenuItem<String?>(
+                DropdownMenuItem<int?>(
                   value: null,
                   child: Text(l10n.notSpecified),
                 ),
-                ...DBHelper.GRIND_SIZES.map((grindSize) {
-                  return DropdownMenuItem<String?>(
-                    value: grindSize,
-                    child:
-                        Text(DBHelper.GRIND_SIZE_NAMES[grindSize] ?? grindSize),
+                ..._grindSizes.map((grindSize) {
+                  return DropdownMenuItem<int?>(
+                    value: grindSize['id'],
+                    child: Text(DBHelper.getLocalizedGrindSize(
+                        grindSize['code'], context)),
                   );
                 }),
               ],
               onChanged: (value) {
                 setState(() {
-                  _selectedGrindSize = value;
+                  _selectedGrindSizeId = value;
                 });
                 debugPrint("Selected grind size: $value");
               },

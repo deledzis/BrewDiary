@@ -6,10 +6,67 @@ import '../db/db_helper.dart';
 import 'add_edit_recipe_screen.dart';
 import 'brew_guide_screen.dart';
 
-class RecipeDetailScreen extends StatelessWidget {
+class RecipeDetailScreen extends StatefulWidget {
   final Map<String, dynamic> recipe;
 
   const RecipeDetailScreen({super.key, required this.recipe});
+
+  @override
+  _RecipeDetailScreenState createState() => _RecipeDetailScreenState();
+}
+
+class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  List<Map<String, dynamic>> _grindSizes = [];
+  late Map<String, dynamic> recipe;
+  late String _brewingMethodName;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    recipe = widget.recipe;
+    debugPrint("Initializing RecipeDetailScreen");
+    _loadGrindSizes();
+  }
+
+  Future<void> _loadGrindSizes() async {
+    debugPrint("Loading grind sizes from DB");
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final grindSizes = await DBHelper().getGrindSizes();
+      setState(() {
+        _grindSizes = grindSizes;
+        debugPrint("Grind sizes loaded: ${_grindSizes.length}");
+      });
+    } catch (e) {
+      // Handle error
+      debugPrint('Error loading grind sizes: $e');
+    }
+    _loadBrewingMethod();
+  }
+
+  Future<void> _loadBrewingMethod() async {
+    debugPrint("Loading brewing methods from DB");
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final methodId = recipe['method_id'];
+      final method = await DBHelper().getMethodById(methodId);
+      setState(() {
+        _brewingMethodName = method?['name'];
+        debugPrint("Brewing method loaded: $_brewingMethodName");
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Handle error
+      debugPrint('Error loading grind sizes: $e');
+    }
+  }
 
   Widget _buildRunInstructionsButtonWidget(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -44,8 +101,8 @@ class RecipeDetailScreen extends StatelessWidget {
       onPressed: () {
         final shareContent = "${l10n.recipe}: ${recipe['name']}\n"
             "${l10n.description}: ${recipe['description'] ?? l10n.notSpecified}\n"
-            "${l10n.brewingMethod}: ${_getMethodName(recipe, context)}\n"
-            "${l10n.grindSize}: ${_getGrindSizeName(recipe)}\n"
+            "${l10n.brewingMethod}: $_brewingMethodName\n"
+            "${l10n.grindSize}: ${_getGrindSizeName(recipe, context)}\n"
             "${l10n.coffee}: ${recipe['coffee_grams'] ?? l10n.notSpecified} ${l10n.g}\n"
             "${l10n.water}: ${recipe['water_volume'] ?? l10n.notSpecified} ${l10n.ml}\n"
             "${l10n.waterTemperature}: ${recipe['water_temperature'] ?? l10n.notSpecified}°C\n"
@@ -116,18 +173,10 @@ class RecipeDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Brew Method Section
-            FutureBuilder<String>(
-              future: _getMethodName(recipe, context),
-              builder: (context, snapshot) {
-                return _buildDetailRowItem(
-                  l10n.brewingMethod,
-                  snapshot.connectionState == ConnectionState.waiting
-                      ? l10n.loading
-                      : snapshot.data ?? l10n.notSpecified,
-                  Icons.coffee,
-                );
-              },
+            _buildDetailRowItem(
+              l10n.brewingMethod,
+              _brewingMethodName,
+              Icons.coffee,
             ),
             const Divider(),
             Row(
@@ -144,7 +193,7 @@ class RecipeDetailScreen extends StatelessWidget {
                 Expanded(
                   child: _buildDetailRowItem(
                     l10n.grindSize,
-                    _getGrindSizeName(recipe),
+                    _getGrindSizeName(recipe, context),
                     Icons.grain,
                   ),
                 ),
@@ -200,7 +249,9 @@ class RecipeDetailScreen extends StatelessWidget {
             _buildRecipeNameWidget(context),
             const SizedBox(height: 24),
             // Recipe Details Card
-            _buildRecipeDetailsCard(context),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildRecipeDetailsCard(context),
             const SizedBox(height: 24),
 
             // Description Section
@@ -297,20 +348,14 @@ class RecipeDetailScreen extends StatelessWidget {
     );
   }
 
-  String _getGrindSizeName(Map<String, dynamic> recipe) {
-    final grindSize = recipe['grind_size'];
-    if (grindSize == null) return 'Not specified';
+  String _getGrindSizeName(Map<String, dynamic> recipe, BuildContext context) {
+    final grindSizeId = recipe['grind_size_id'];
+    if (grindSizeId == null) return 'Not specified';
+    final grindSize = _grindSizes.firstWhere(
+      (grindSize) => grindSize['id'] == grindSizeId,
+    );
 
-    return DBHelper.GRIND_SIZE_NAMES[grindSize] ?? grindSize;
-  }
-
-  Future<String> _getMethodName(
-      Map<String, dynamic> recipe, BuildContext context) async {
-    final methodId = recipe['method_id'];
-    if (methodId == null) return 'Not specified';
-
-    final method = await DBHelper().getMethodById(methodId);
-    return method?['name'] ?? 'Unknown method';
+    return DBHelper.getLocalizedGrindSize(grindSize['code'], context);
   }
 
   Future<void> _confirmDelete(BuildContext context) async {

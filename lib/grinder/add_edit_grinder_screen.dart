@@ -15,13 +15,14 @@ class AddEditGrinderScreen extends StatefulWidget {
 
 class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
   final _formKey = GlobalKey<FormState>();
+  List<Map<String, dynamic>> _grindSizes = [];
   bool _isLoading = true;
 
   late TextEditingController _nameController;
   late TextEditingController _notesController;
 
   // Controllers for each grind size
-  final Map<String, Map<String, TextEditingController>> _clickControllers = {};
+  final Map<int, Map<String, TextEditingController>> _clickControllers = {};
 
   @override
   void initState() {
@@ -33,12 +34,31 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
       text: widget.grinder?['notes'] ?? '',
     );
 
-    // Initialize click controllers for each grind size
-    for (final grindSize in DBHelper.GRIND_SIZES) {
-      _clickControllers[grindSize] = {
-        'min': TextEditingController(),
-        'max': TextEditingController(),
-      };
+    _loadGrindSizes();
+  }
+
+  Future<void> _loadGrindSizes() async {
+    debugPrint("Loading grind sizes from DB");
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final grindSizes = await DBHelper().getGrindSizes();
+      setState(() {
+        _grindSizes = grindSizes;
+        debugPrint("Grind sizes loaded: ${_grindSizes.length}");
+        // Fill controllers with saved values
+        for (final size in grindSizes) {
+          _clickControllers[size['id']] = {
+            'min': TextEditingController(),
+            'max': TextEditingController(),
+          };
+        }
+      });
+    } catch (e) {
+      // Handle error
+      debugPrint('Error loading grind sizes: $e');
     }
 
     _loadGrinderClickSettings();
@@ -56,11 +76,12 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
 
         // Fill controllers with saved values
         for (final setting in settings) {
-          final grindSize = setting['grind_size'] as String?;
-          if (grindSize != null && _clickControllers.containsKey(grindSize)) {
-            _clickControllers[grindSize]!['min']!.text =
+          final grindSizeId = setting['grind_size_id'] as int?;
+          if (grindSizeId != null &&
+              _clickControllers.containsKey(grindSizeId)) {
+            _clickControllers[grindSizeId]!['min']!.text =
                 setting['min_clicks']?.toString() ?? '';
-            _clickControllers[grindSize]!['max']!.text =
+            _clickControllers[grindSizeId]!['max']!.text =
                 setting['max_clicks']?.toString() ?? '';
           }
         }
@@ -114,7 +135,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
 
         // Save all click settings
         for (final entry in _clickControllers.entries) {
-          final grindSize = entry.key;
+          final grindSizeId = entry.key;
           final controllers = entry.value;
 
           final minText = controllers['min']?.text ?? '';
@@ -129,7 +150,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
 
           final settingData = {
             'grinder_id': grinderId,
-            'grind_size': grindSize,
+            'grind_size_id': grindSizeId,
             'min_clicks': minClicks,
             'max_clicks': maxClicks,
           };
@@ -155,82 +176,6 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
     }
   }
 
-  void _searchTemplate() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Search Grinder Template'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Enter grinder model',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (value) {
-                // In a real app, this would search a database of templates
-                Navigator.pop(context);
-
-                // For demo purposes, just show a preset template for C3 Pro
-                if (value.toLowerCase().contains('c3') ||
-                    value.toLowerCase().contains('timemore')) {
-                  _applyTemplate('Timemore C3 Pro');
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('No template found for this grinder')),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _applyTemplate(String templateName) {
-    // This would load a template from a database in a real app
-    // For demo purposes, we'll use hardcoded values for Timemore C3 Pro
-    setState(() {
-      _nameController.text = templateName;
-
-      // Set click ranges for each grind size
-      final Map<String, Map<String, int>> templateValues = {
-        DBHelper.GRIND_TURKISH: {'min': 2, 'max': 5},
-        DBHelper.GRIND_EXTRA_FINE: {'min': 5, 'max': 8},
-        DBHelper.GRIND_FINE: {'min': 8, 'max': 11},
-        DBHelper.GRIND_MEDIUM_FINE: {'min': 11, 'max': 16},
-        DBHelper.GRIND_MEDIUM: {'min': 16, 'max': 20},
-        DBHelper.GRIND_MEDIUM_COARSE: {'min': 20, 'max': 24},
-        DBHelper.GRIND_COARSE: {'min': 24, 'max': 25},
-      };
-
-      // Apply template values to controllers
-      for (final entry in templateValues.entries) {
-        final grindSize = entry.key;
-        final values = entry.value;
-
-        if (_clickControllers.containsKey(grindSize)) {
-          _clickControllers[grindSize]!['min']!.text = values['min'].toString();
-          _clickControllers[grindSize]!['max']!.text = values['max'].toString();
-        }
-      }
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Applied template for $templateName')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -241,7 +186,9 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _searchTemplate,
+            onPressed: () {
+              /* TODO: add search template screen */
+            },
             tooltip: 'Search Grinder Template',
           ),
           IconButton(
@@ -293,9 +240,11 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
                     const SizedBox(height: 16),
 
                     // Grind size settings
-                    ...DBHelper.GRIND_SIZES.map((grindSize) {
+                    ..._grindSizes.map((grindSize) {
+                      final sizeId = grindSize['id'];
+                      final sizeCode = grindSize['code'];
                       final displayName =
-                          DBHelper.GRIND_SIZE_NAMES[grindSize] ?? grindSize;
+                          DBHelper.getLocalizedGrindSize(sizeCode, context);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Row(
@@ -324,7 +273,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
                                     ),
                                     child: TextField(
                                       controller:
-                                          _clickControllers[grindSize]!['min'],
+                                          _clickControllers[sizeId]!['min'],
                                       keyboardType: TextInputType.number,
                                       inputFormatters: [
                                         FilteringTextInputFormatter.digitsOnly,
@@ -356,7 +305,7 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
                                     ),
                                     child: TextField(
                                       controller:
-                                          _clickControllers[grindSize]!['max'],
+                                          _clickControllers[sizeId]!['max'],
                                       keyboardType: TextInputType.number,
                                       inputFormatters: [
                                         FilteringTextInputFormatter.digitsOnly,
