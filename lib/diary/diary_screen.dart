@@ -1,5 +1,9 @@
 import 'dart:io';
 
+import 'package:brew_diary/db/brewing_method.dart';
+import 'package:brew_diary/db/brewing_result.dart';
+import 'package:brew_diary/db/recipe.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -11,12 +15,14 @@ class DiaryScreen extends StatefulWidget {
   const DiaryScreen({super.key});
 
   @override
-  _DiaryScreenState createState() => _DiaryScreenState();
+  State<DiaryScreen> createState() => _DiaryScreenState();
 }
 
 class _DiaryScreenState extends State<DiaryScreen> {
-  List<Map<String, dynamic>> _brewingResults = [];
-  final Map<int, String> _methodNames = {};
+  final dbHelper = DBHelper();
+
+  List<BrewingResult> _brewingResults = [];
+  List<BrewingMethod> _methods = [];
   bool _isLoading = true;
 
   @override
@@ -30,19 +36,17 @@ class _DiaryScreenState extends State<DiaryScreen> {
   /// Loads the available brewing methods from the database.
   Future<void> _loadMethods() async {
     debugPrint("Loading brewing methods from DB");
-    final methods = await DBHelper().getMethods();
+    final methods = await dbHelper.getBrewingMethods();
     setState(() {
-      for (var method in methods) {
-        _methodNames[method['id']] = method['name'];
-      }
+      _methods = methods;
     });
-    debugPrint("Loaded ${_methodNames.length} methods");
+    debugPrint("Loaded ${_methods.length} methods");
   }
 
   /// Loads the brewing results (diary entries) from the database.
   Future<void> _loadBrewingResults() async {
     debugPrint("Loading brewing results from DB");
-    final results = await DBHelper().getBrewingResults();
+    final results = await dbHelper.getBrewingResults();
     setState(() {
       _brewingResults = results;
       _isLoading = false;
@@ -51,11 +55,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
   }
 
   /// Calculates the overall rating from taste attributes.
-  double calculateOverallRating(Map<String, dynamic> entry) {
-    double aroma = (entry['aroma'] ?? 0);
-    double acidity = (entry['acidity'] ?? 0);
-    double sweetness = (entry['sweetness'] ?? 0);
-    double body = (entry['body'] ?? 0);
+  double calculateOverallRating(BrewingResult entry) {
+    double aroma = (entry.aroma);
+    double acidity = (entry.acidity);
+    double sweetness = (entry.sweetness);
+    double body = (entry.body);
     return (aroma + acidity + sweetness + body) / 4;
   }
 
@@ -96,7 +100,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 );
                 if (newEntry != null) {
                   debugPrint("New entry received from AddEditEntryScreen");
-                  await DBHelper().insertBrewingResult(newEntry);
                   _loadBrewingResults();
                 }
               },
@@ -109,54 +112,48 @@ class _DiaryScreenState extends State<DiaryScreen> {
   }
 
   /// Builds a card widget representing a single brewing result.
-  Widget _buildBrewingResultCard(
-      Map<String, dynamic> result, AppLocalizations l10n) {
+  Widget _buildBrewingResultCard(BrewingResult result, AppLocalizations l10n) {
     double overall = calculateOverallRating(result);
 
     // Determine method name based on the available fields.
     String methodName = '';
-    if (result['method_id'] != null) {
-      methodName = _methodNames[result['method_id']] ?? l10n.brewingMethod;
-    } else if (result['method'] != null) {
-      methodName = result['method'];
-    } else {
-      methodName = l10n.brewingMethod;
-    }
+    final method = _methods.firstWhereOrNull((m) => m.id == result.methodId);
+    methodName = method?.name ?? l10n.brewingMethod;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
-        leading: result['imagePath'] != null
+        leading: result.imagePath != null
             ? Image.file(
-                File(result['imagePath']),
+                File(result.imagePath!),
                 width: 50,
                 height: 50,
                 fit: BoxFit.cover,
               )
             : const Icon(Icons.local_cafe),
         title: Text(methodName),
-        subtitle: FutureBuilder<Map<String, dynamic>?>(
-          future: result['recipeId'] != null
-              ? DBHelper().getRecipeById(result['recipeId'])
+        subtitle: FutureBuilder<Recipe?>(
+          future: result.recipeId != null
+              ? dbHelper.getRecipeById(result.recipeId!)
               : Future.value(null),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Text(l10n.loadingRecipe);
             } else if (snapshot.hasData && snapshot.data != null) {
               return Text(
-                '${l10n.recipe}: ${snapshot.data!['name']}\n'
-                '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.waterTemperature}: ${result['temperature']}°C',
+                '${l10n.recipe}: ${snapshot.data!.name}\n'
+                '${l10n.coffeeAmount}: ${result.coffeeGrams} ${l10n.g}, ${l10n.waterAmount}: ${result.waterVolume} ${l10n.ml}, ${l10n.waterTemperature}: ${result.temperature}${l10n.celsius}',
               );
             } else {
               return Text(
-                '${l10n.coffeeAmount}: ${result['coffeeGrams']} ${l10n.g}, ${l10n.waterAmount}: ${result['waterVolume']} ${l10n.ml}, ${l10n.waterTemperature}: ${result['temperature']}°C',
+                '${l10n.coffeeAmount}: ${result.coffeeGrams} ${l10n.g}, ${l10n.waterAmount}: ${result.waterVolume} ${l10n.ml}, ${l10n.waterTemperature}: ${result.temperature}${l10n.celsius}',
               );
             }
           },
         ),
         trailing: CircleAvatar(child: Text(overall.toStringAsFixed(1))),
         onTap: () async {
-          debugPrint("Tapped diary entry card with ID: ${result['id']}");
+          debugPrint("Tapped diary entry card with ID: ${result.id}");
           final shouldReload = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -200,7 +197,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
         );
         if (newEntry != null) {
           debugPrint("New entry received from AddEditEntryScreen via FAB");
-          await DBHelper().insertBrewingResult(newEntry);
           _loadBrewingResults();
         }
       },

@@ -1,3 +1,6 @@
+import 'package:brew_diary/db/brewing_method.dart';
+import 'package:brew_diary/db/grind_size.dart';
+import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -5,15 +8,17 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../db/db_helper.dart';
 
 class AddEditRecipeScreen extends StatefulWidget {
-  final Map<String, dynamic>? recipe;
+  final Recipe? recipe;
 
   const AddEditRecipeScreen({super.key, this.recipe});
 
   @override
-  _AddEditRecipeScreenState createState() => _AddEditRecipeScreenState();
+  State<AddEditRecipeScreen> createState() => _AddEditRecipeScreenState();
 }
 
 class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
+  final dbHelper = DBHelper();
+
   // Form key for validation
   final _formKey = GlobalKey<FormState>();
 
@@ -27,8 +32,8 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
 
   int? _selectedGrindSizeId;
   int? _selectedMethodId;
-  List<Map<String, dynamic>> _brewingMethods = [];
-  List<Map<String, dynamic>> _grindSizes = [];
+  List<BrewingMethod> _brewingMethods = [];
+  List<GrindSize> _grindSizes = [];
   bool _isLoading = true;
 
   @override
@@ -36,19 +41,19 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     super.initState();
     debugPrint("Initializing AddEditRecipeScreen");
     // Initialize controllers with existing recipe data if available.
-    _nameController = TextEditingController(text: widget.recipe?['name'] ?? '');
+    _nameController = TextEditingController(text: widget.recipe?.name ?? '');
     _descriptionController =
-        TextEditingController(text: widget.recipe?['description'] ?? '');
+        TextEditingController(text: widget.recipe?.description ?? '');
     _instructionsController =
-        TextEditingController(text: widget.recipe?['instructions'] ?? '');
+        TextEditingController(text: widget.recipe?.instructions ?? '');
     _coffeeGramsController = TextEditingController(
-        text: widget.recipe?['coffee_grams']?.toString() ?? '');
+        text: widget.recipe?.coffeeGrams.toString() ?? '');
     _waterVolumeController = TextEditingController(
-        text: widget.recipe?['water_volume']?.toString() ?? '');
+        text: widget.recipe?.waterVolume.toString() ?? '');
     _waterTemperatureController = TextEditingController(
-        text: widget.recipe?['water_temperature']?.toString() ?? '');
-    _selectedGrindSizeId = widget.recipe?['grind_size_id'];
-    _selectedMethodId = widget.recipe?['method_id'];
+        text: widget.recipe?.waterVolume.toString() ?? '');
+    _selectedGrindSizeId = widget.recipe?.grindSizeId;
+    _selectedMethodId = widget.recipe?.methodId;
     _loadBrewingMethods();
   }
 
@@ -58,13 +63,13 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     setState(() {
       _isLoading = true;
     });
-    final methods = await DBHelper().getMethods();
+    final methods = await dbHelper.getBrewingMethods();
     setState(() {
       _brewingMethods = methods;
       // Validate if the selected method exists in the loaded methods.
       if (_selectedMethodId != null) {
         final methodExists =
-            _brewingMethods.any((method) => method['id'] == _selectedMethodId);
+            _brewingMethods.any((method) => method.id == _selectedMethodId);
         if (!methodExists) {
           _selectedMethodId = null;
           debugPrint(
@@ -83,7 +88,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     });
 
     try {
-      final grindSizes = await DBHelper().getGrindSizes();
+      final grindSizes = await dbHelper.getGrindSizes();
       setState(() {
         _grindSizes = grindSizes;
         debugPrint("Grind sizes loaded: ${_grindSizes.length}");
@@ -111,6 +116,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     if (_formKey.currentState!.validate()) {
       debugPrint("Form validated. Preparing recipe data for saving.");
       final recipeData = {
+        'id': widget.recipe?.id,
         'name': _nameController.text,
         'description': _descriptionController.text,
         'instructions': _instructionsController.text,
@@ -125,17 +131,20 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
         'water_temperature': _waterTemperatureController.text.isNotEmpty
             ? int.parse(_waterTemperatureController.text)
             : null,
+        'created_date': DateTime.now().toIso8601String(),
       };
+      final recipe = Recipe.fromMap(recipeData);
 
       if (widget.recipe == null) {
         debugPrint("Inserting new recipe");
-        await DBHelper().insertRecipe(recipeData);
+        await dbHelper.insertRecipe(recipe);
       } else {
-        recipeData['id'] = widget.recipe!['id'];
-        debugPrint("Updating existing recipe with ID: ${widget.recipe!['id']}");
-        await DBHelper().updateRecipe(recipeData);
+        debugPrint("Updating existing recipe with ID: ${widget.recipe!.id}");
+        await dbHelper.updateRecipe(recipe);
       }
-      Navigator.pop(context, recipeData);
+      if (mounted) {
+        Navigator.pop(context, recipeData);
+      }
     } else {
       debugPrint("Form validation failed.");
     }
@@ -197,19 +206,19 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                   ),
                 )
               : DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
+                  child: DropdownButton<int>(
                     isExpanded: true,
                     value: _selectedMethodId,
                     hint: Text(l10n.selectMethod),
                     items: [
-                      DropdownMenuItem<int?>(
+                      DropdownMenuItem<int>(
                         value: null,
                         child: Text(l10n.notSpecified),
                       ),
                       ..._brewingMethods.map((method) {
-                        return DropdownMenuItem<int?>(
-                          value: method['id'] as int,
-                          child: Text(method['name']),
+                        return DropdownMenuItem<int>(
+                          value: method.id,
+                          child: Text(method.name),
                         );
                       }),
                     ],
@@ -242,32 +251,48 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
             borderRadius: BorderRadius.circular(8),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int?>(
-              isExpanded: true,
-              value: _selectedGrindSizeId,
-              hint: Text(l10n.selectGrindSize),
-              items: [
-                DropdownMenuItem<int?>(
-                  value: null,
-                  child: Text(l10n.notSpecified),
+          child: _isLoading
+              ? Container(
+                  height: 48,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text(l10n.loading),
+                    ],
+                  ),
+                )
+              : DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    isExpanded: true,
+                    value: _selectedGrindSizeId,
+                    hint: Text(l10n.selectGrindSize),
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: null,
+                        child: Text(l10n.notSpecified),
+                      ),
+                      ..._grindSizes.map((grindSize) {
+                        return DropdownMenuItem<int>(
+                          value: grindSize.id,
+                          child: Text(DBHelper.getLocalizedGrindSize(
+                              grindSize.code, context)),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedGrindSizeId = value;
+                      });
+                      debugPrint("Selected grind size: $value");
+                    },
+                  ),
                 ),
-                ..._grindSizes.map((grindSize) {
-                  return DropdownMenuItem<int?>(
-                    value: grindSize['id'],
-                    child: Text(DBHelper.getLocalizedGrindSize(
-                        grindSize['code'], context)),
-                  );
-                }),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedGrindSizeId = value;
-                });
-                debugPrint("Selected grind size: $value");
-              },
-            ),
-          ),
         ),
       ],
     );
@@ -414,9 +439,8 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Note: The title uses l10n.brewingMethod in the original code, although it represents instructions.
         Text(
-          l10n.brewingMethod,
+          "Instructions",
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),

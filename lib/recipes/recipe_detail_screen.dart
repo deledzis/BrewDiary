@@ -1,3 +1,5 @@
+import 'package:brew_diary/db/grind_size.dart';
+import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
@@ -7,17 +9,18 @@ import 'add_edit_recipe_screen.dart';
 import 'brew_guide_screen.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
-  final Map<String, dynamic> recipe;
+  final Recipe recipe;
 
   const RecipeDetailScreen({super.key, required this.recipe});
 
   @override
-  _RecipeDetailScreenState createState() => _RecipeDetailScreenState();
+  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  List<Map<String, dynamic>> _grindSizes = [];
-  late Map<String, dynamic> recipe;
+  final dbHelper = DBHelper();
+  List<GrindSize> _grindSizes = [];
+  late Recipe recipe;
   late String _brewingMethodName;
   bool _isLoading = true;
 
@@ -36,7 +39,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     });
 
     try {
-      final grindSizes = await DBHelper().getGrindSizes();
+      final grindSizes = await dbHelper.getGrindSizes();
       setState(() {
         _grindSizes = grindSizes;
         debugPrint("Grind sizes loaded: ${_grindSizes.length}");
@@ -49,16 +52,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Future<void> _loadBrewingMethod() async {
+    final l10n = AppLocalizations.of(context)!;
     debugPrint("Loading brewing methods from DB");
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final methodId = recipe['method_id'];
-      final method = await DBHelper().getMethodById(methodId);
+      final methodId = recipe.methodId;
+      final method = await dbHelper.getBrewingMethodById(methodId);
       setState(() {
-        _brewingMethodName = method?['name'];
+        _brewingMethodName = method?.name ?? l10n.notSpecified;
         debugPrint("Brewing method loaded: $_brewingMethodName");
         _isLoading = false;
       });
@@ -74,8 +78,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       icon: const Icon(Icons.play_arrow),
       tooltip: l10n.startBrewing,
       onPressed: () {
-        if (recipe['instructions'] != null &&
-            recipe['instructions'].toString().trim().isNotEmpty) {
+        if (recipe.instructions.toString().trim().isNotEmpty) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -99,15 +102,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       icon: const Icon(Icons.share),
       tooltip: l10n.shareRecipe,
       onPressed: () {
-        final shareContent = "${l10n.recipe}: ${recipe['name']}\n"
-            "${l10n.description}: ${recipe['description'] ?? l10n.notSpecified}\n"
+        final shareContent = "${l10n.recipe}: ${recipe.name}\n"
+            "${l10n.description}: ${recipe.description}\n"
             "${l10n.brewingMethod}: $_brewingMethodName\n"
             "${l10n.grindSize}: ${_getGrindSizeName(recipe, context)}\n"
-            "${l10n.coffee}: ${recipe['coffee_grams'] ?? l10n.notSpecified} ${l10n.g}\n"
-            "${l10n.water}: ${recipe['water_volume'] ?? l10n.notSpecified} ${l10n.ml}\n"
-            "${l10n.waterTemperature}: ${recipe['water_temperature'] ?? l10n.notSpecified}°C\n"
-            "${l10n.brewingMethod}: ${recipe['instructions']}";
-        Share.share(shareContent, subject: recipe['name']);
+            "${l10n.coffee}: ${recipe.coffeeGrams} ${l10n.g}\n"
+            "${l10n.water}: ${recipe.waterVolume} ${l10n.ml}\n"
+            "${l10n.waterTemperature}: ${recipe.waterTemperature}${l10n.celsius}\n"
+            "${l10n.brewingMethod}: ${recipe.instructions}";
+        Share.share(shareContent, subject: recipe.name);
       },
     );
   }
@@ -123,7 +126,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildRecipeNameWidget(BuildContext context) {
     return Text(
-      recipe['name'],
+      recipe.name,
       style: Theme.of(context).textTheme.headlineMedium,
     );
   }
@@ -184,9 +187,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 Expanded(
                   child: _buildDetailRowItem(
                     l10n.coffee,
-                    recipe['coffee_grams'] != null
-                        ? '${recipe['coffee_grams']} ${l10n.g}'
-                        : l10n.notSpecified,
+                    '${recipe.coffeeGrams} ${l10n.g}',
                     Icons.coffee_maker,
                   ),
                 ),
@@ -205,18 +206,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 Expanded(
                   child: _buildDetailRowItem(
                     l10n.water,
-                    recipe['water_volume'] != null
-                        ? '${recipe['water_volume']} ${l10n.ml}'
-                        : l10n.notSpecified,
+                    '${recipe.waterVolume} ${l10n.ml}',
                     Icons.water_drop,
                   ),
                 ),
                 Expanded(
                   child: _buildDetailRowItem(
                     l10n.waterTemperature,
-                    recipe['water_temperature'] != null
-                        ? '${recipe['water_temperature']}${l10n.celsius}'
-                        : l10n.notSpecified,
+                    '${recipe.waterTemperature}${l10n.celsius}',
                     Icons.thermostat,
                   ),
                 ),
@@ -233,7 +230,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(recipe['name']),
+        title: Text(recipe.name),
         actions: [
           _buildRunInstructionsButtonWidget(context),
           _buildShareButtonWidget(context),
@@ -255,8 +252,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             const SizedBox(height: 24),
 
             // Description Section
-            if (recipe['description'] != null &&
-                recipe['description'].toString().trim().isNotEmpty) ...[
+            if (recipe.description.toString().trim().isNotEmpty) ...[
               Text(
                 l10n.description,
                 style: const TextStyle(
@@ -273,7 +269,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: Text(recipe['description']),
+                child: Text(recipe.description),
               ),
               const SizedBox(height: 24),
             ],
@@ -295,7 +291,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Text(recipe['instructions'] ?? l10n.noInstructions),
+              child: Text(recipe.instructions),
             ),
 
             const SizedBox(height: 24),
@@ -305,8 +301,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  if (recipe['instructions'] != null &&
-                      recipe['instructions'].toString().trim().isNotEmpty) {
+                  if (recipe.instructions.toString().trim().isNotEmpty) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -339,7 +334,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               builder: (context) => AddEditRecipeScreen(recipe: recipe),
             ),
           );
-          if (updatedRecipe != null) {
+          if (updatedRecipe != null && context.mounted) {
             Navigator.pop(context, true);
           }
         },
@@ -348,14 +343,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  String _getGrindSizeName(Map<String, dynamic> recipe, BuildContext context) {
-    final grindSizeId = recipe['grind_size_id'];
-    if (grindSizeId == null) return 'Not specified';
+  String _getGrindSizeName(Recipe recipe, BuildContext context) {
+    final grindSizeId = recipe.grindSizeId;
     final grindSize = _grindSizes.firstWhere(
-      (grindSize) => grindSize['id'] == grindSizeId,
+      (grindSize) => grindSize.id == grindSizeId,
     );
 
-    return DBHelper.getLocalizedGrindSize(grindSize['code'], context);
+    return DBHelper.getLocalizedGrindSize(grindSize.code, context);
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
@@ -365,7 +359,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       builder: (context) => AlertDialog(
         title: Text(l10n.deleteRecipe),
         content: Text(
-          'Are you sure you want to delete "${recipe['name']}"?',
+          'Are you sure you want to delete "${recipe.name}"?',
         ),
         actions: [
           TextButton(
@@ -381,8 +375,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
 
     if (confirm == true) {
-      await DBHelper().deleteRecipe(recipe['id']);
-      Navigator.pop(context, true);
+      await dbHelper.deleteRecipe(recipe.id!);
+      if (context.mounted) {
+        Navigator.pop(context, true);
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -9,11 +10,12 @@ class RecipesScreen extends StatefulWidget {
   const RecipesScreen({super.key});
 
   @override
-  _RecipesScreenState createState() => _RecipesScreenState();
+  State<RecipesScreen> createState() => _RecipesScreenState();
 }
 
 class _RecipesScreenState extends State<RecipesScreen> {
-  List<Map<String, dynamic>> _recipes = [];
+  final dbHelper = DBHelper();
+  List<Recipe> _recipes = [];
   final Map<int, String> _methodNames = {};
 
   @override
@@ -24,16 +26,16 @@ class _RecipesScreenState extends State<RecipesScreen> {
   }
 
   Future<void> _loadMethods() async {
-    final methods = await DBHelper().getMethods();
+    final methods = await dbHelper.getBrewingMethods();
     setState(() {
       for (var method in methods) {
-        _methodNames[method['id']] = method['name'];
+        _methodNames[method.id] = method.name;
       }
     });
   }
 
   Future<void> _loadRecipes() async {
-    final recipes = await DBHelper().getRecipes();
+    final recipes = await dbHelper.getRecipes();
     setState(() {
       _recipes = recipes;
     });
@@ -50,36 +52,29 @@ class _RecipesScreenState extends State<RecipesScreen> {
           final recipe = _recipes[index];
           // Get method name
           String methodName = '';
-          if (recipe['method_id'] != null) {
-            methodName = _methodNames[recipe['method_id']] ?? '';
-          }
+          methodName = _methodNames[recipe.methodId] ?? '';
 
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: ListTile(
               leading: const Icon(Icons.coffee),
-              title: Text(recipe['name']),
+              title: Text(recipe.name),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (recipe['description'] != null &&
-                      recipe['description'].toString().isNotEmpty)
+                  if (recipe.description.toString().isNotEmpty)
                     Text(
-                      recipe['description'],
+                      recipe.description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   if (methodName.isNotEmpty) Text(methodName),
-                  if (recipe['coffee_grams'] != null ||
-                      recipe['water_volume'] != null)
-                    Text(
-                        '${recipe['coffee_grams'] != null ? "${l10n.coffeeAmount}: ${recipe['coffee_grams']} ${l10n.g}" : ""}'
-                        '${recipe['coffee_grams'] != null && recipe['water_volume'] != null ? ", " : ""}'
-                        '${recipe['water_volume'] != null ? "${l10n.waterAmount}: ${recipe['water_volume']} ${l10n.ml}" : ""}'
-                        '${recipe['water_temperature'] != null ? ", ${l10n.waterTemperature}: ${recipe['water_temperature']}°C" : ""}'),
+                  Text('${l10n.coffeeAmount}: ${recipe.coffeeGrams} ${l10n.g}\n'
+                      '${l10n.waterAmount}: ${recipe.waterVolume} ${l10n.ml}\n'
+                      '${l10n.waterTemperature}: ${recipe.waterTemperature}${l10n.celsius}'),
                 ],
               ),
-              trailing: recipe['is_favorite'] == 1
+              trailing: recipe.isFavorite == true
                   ? const Icon(Icons.favorite, color: Colors.red)
                   : null,
               onTap: () async {

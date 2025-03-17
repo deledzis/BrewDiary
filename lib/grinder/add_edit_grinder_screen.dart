@@ -1,3 +1,6 @@
+import 'package:brew_diary/db/grind_size.dart';
+import 'package:brew_diary/db/grinder.dart';
+import 'package:brew_diary/db/grinder_click_setting.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -5,17 +8,19 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../db/db_helper.dart';
 
 class AddEditGrinderScreen extends StatefulWidget {
-  final Map<String, dynamic>? grinder;
+  final Grinder? grinder;
 
   const AddEditGrinderScreen({super.key, this.grinder});
 
   @override
-  _AddEditGrinderScreenState createState() => _AddEditGrinderScreenState();
+  State<AddEditGrinderScreen> createState() => _AddEditGrinderScreenState();
 }
 
 class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
+  final dbHelper = DBHelper();
+
   final _formKey = GlobalKey<FormState>();
-  List<Map<String, dynamic>> _grindSizes = [];
+  List<GrindSize> _grindSizes = [];
   bool _isLoading = true;
 
   late TextEditingController _nameController;
@@ -28,10 +33,10 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(
-      text: widget.grinder?['name'] ?? '',
+      text: widget.grinder?.name ?? '',
     );
     _notesController = TextEditingController(
-      text: widget.grinder?['notes'] ?? '',
+      text: widget.grinder?.notes ?? '',
     );
 
     _loadGrindSizes();
@@ -44,13 +49,13 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
     });
 
     try {
-      final grindSizes = await DBHelper().getGrindSizes();
+      final grindSizes = await dbHelper.getGrindSizes();
       setState(() {
         _grindSizes = grindSizes;
         debugPrint("Grind sizes loaded: ${_grindSizes.length}");
         // Fill controllers with saved values
         for (final size in grindSizes) {
-          _clickControllers[size['id']] = {
+          _clickControllers[size.id] = {
             'min': TextEditingController(),
             'max': TextEditingController(),
           };
@@ -72,18 +77,15 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
     if (widget.grinder != null) {
       try {
         final settings =
-            await DBHelper().getGrinderClickSettings(widget.grinder!['id']);
+            await dbHelper.getGrinderClickSettings(widget.grinder!.id!);
 
         // Fill controllers with saved values
         for (final setting in settings) {
-          final grindSizeId = setting['grind_size_id'] as int?;
-          if (grindSizeId != null &&
-              _clickControllers.containsKey(grindSizeId)) {
-            _clickControllers[grindSizeId]!['min']!.text =
-                setting['min_clicks']?.toString() ?? '';
-            _clickControllers[grindSizeId]!['max']!.text =
-                setting['max_clicks']?.toString() ?? '';
-          }
+          final grindSizeId = setting.grindSizeId;
+          _clickControllers[grindSizeId]!['min']!.text =
+              setting.minClicks.toString();
+          _clickControllers[grindSizeId]!['max']!.text =
+              setting.maxClicks.toString();
         }
       } catch (e) {
         // Handle error
@@ -118,19 +120,20 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
 
       try {
         final grinderData = {
+          'id': widget.grinder?.id,
           'name': _nameController.text,
           'notes': _notesController.text,
         };
+        final grinder = Grinder.fromMap(grinderData);
 
         int grinderId;
         if (widget.grinder == null) {
           // Insert new grinder
-          grinderId = await DBHelper().insertGrinder(grinderData);
+          grinderId = await dbHelper.insertGrinder(grinder);
         } else {
           // Update existing grinder
-          grinderId = widget.grinder!['id'];
-          grinderData['id'] = grinderId.toString();
-          await DBHelper().updateGrinder(grinderData);
+          grinderId = grinder.id!;
+          await dbHelper.updateGrinder(grinder);
         }
 
         // Save all click settings
@@ -154,18 +157,21 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
             'min_clicks': minClicks,
             'max_clicks': maxClicks,
           };
+          final grinderSettings = GrinderClickSetting.fromMap(settingData);
 
-          await DBHelper().saveGrinderClickSetting(settingData);
+          await dbHelper.insertOrUpdateGrinderClickSetting(grinderSettings);
         }
 
         if (mounted) {
           Navigator.pop(context, true);
         }
-      } catch (e) {
-        // Handle error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving grinder: $e')),
-        );
+      } catch (e, s) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving grinder: $e')),
+          );
+        }
+        debugPrintStack(stackTrace: s);
       } finally {
         if (mounted) {
           setState(() {
@@ -241,8 +247,8 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
 
                     // Grind size settings
                     ..._grindSizes.map((grindSize) {
-                      final sizeId = grindSize['id'];
-                      final sizeCode = grindSize['code'];
+                      final sizeId = grindSize.id;
+                      final sizeCode = grindSize.code;
                       final displayName =
                           DBHelper.getLocalizedGrindSize(sizeCode, context);
                       return Padding(

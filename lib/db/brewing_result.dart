@@ -1,6 +1,6 @@
 class BrewingResult {
   final int? id;
-  final int? methodId;
+  final int methodId;
   final int coffeeGrams;
   final int waterVolume;
   final int temperature;
@@ -16,7 +16,7 @@ class BrewingResult {
 
   BrewingResult({
     this.id,
-    this.methodId,
+    required this.methodId,
     required this.coffeeGrams,
     required this.waterVolume,
     required this.temperature,
@@ -53,7 +53,7 @@ class BrewingResult {
   factory BrewingResult.fromMap(Map<String, dynamic> map) {
     return BrewingResult(
       id: map['id'] as int?,
-      methodId: map['method_id'] as int?,
+      methodId: map['method_id'] as int,
       coffeeGrams: map['coffeeGrams'] as int,
       waterVolume: map['waterVolume'] as int,
       temperature: map['temperature'] as int,

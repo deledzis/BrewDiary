@@ -1,3 +1,4 @@
+import 'package:brew_diary/db/grinder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -8,11 +9,13 @@ class MyGrindersScreen extends StatefulWidget {
   const MyGrindersScreen({super.key});
 
   @override
-  _MyGrindersScreenState createState() => _MyGrindersScreenState();
+  State<MyGrindersScreen> createState() => _MyGrindersScreenState();
 }
 
 class _MyGrindersScreenState extends State<MyGrindersScreen> {
-  List<Map<String, dynamic>> _grinders = [];
+  final dbHelper = DBHelper();
+
+  List<Grinder> _grinders = [];
   final Map<int, int> _clickSettingsCount = {};
   bool _isLoading = true;
 
@@ -27,15 +30,12 @@ class _MyGrindersScreenState extends State<MyGrindersScreen> {
       _isLoading = true;
     });
 
-    final grinders = await DBHelper().getGrinders();
+    final grinders = await dbHelper.getGrinders();
 
     // Count click settings for each grinder
     for (var grinder in grinders) {
-      if (grinder['id'] != null) {
-        final settings =
-            await DBHelper().getGrinderClickSettings(grinder['id']);
-        _clickSettingsCount[grinder['id']] = settings.length;
-      }
+      final settings = await dbHelper.getGrinderClickSettings(grinder.id!);
+      _clickSettingsCount[grinder.id!] = settings.length;
     }
 
     setState(() {
@@ -59,22 +59,21 @@ class _MyGrindersScreenState extends State<MyGrindersScreen> {
                   itemCount: _grinders.length,
                   itemBuilder: (context, index) {
                     final grinder = _grinders[index];
-                    final settingsCount =
-                        _clickSettingsCount[grinder['id']] ?? 0;
+                    final settingsCount = _clickSettingsCount[grinder.id] ?? 0;
 
                     return Card(
                       margin: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       child: ListTile(
                         leading: const Icon(Icons.coffee_maker),
-                        title: Text(grinder['name']),
+                        title: Text(grinder.name),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (grinder['notes'] != null &&
-                                grinder['notes'].toString().isNotEmpty)
+                            if (grinder.notes != null &&
+                                grinder.notes.toString().isNotEmpty)
                               Text(
-                                grinder['notes'],
+                                grinder.notes!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -145,13 +144,13 @@ class _MyGrindersScreenState extends State<MyGrindersScreen> {
     );
   }
 
-  Future<void> _confirmDelete(Map<String, dynamic> grinder) async {
+  Future<void> _confirmDelete(Grinder grinder) async {
     final l10n = AppLocalizations.of(context)!;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete ${grinder['name']}?'),
+        title: Text('Delete ${grinder.name}?'),
         content: Text(
             'This will permanently delete this grinder and all its settings.'),
         actions: [
@@ -168,7 +167,7 @@ class _MyGrindersScreenState extends State<MyGrindersScreen> {
     );
 
     if (confirmed == true) {
-      await DBHelper().deleteGrinder(grinder['id']);
+      await dbHelper.deleteGrinder(grinder.id!);
       _loadGrinders();
     }
   }

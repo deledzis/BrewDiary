@@ -1,24 +1,26 @@
 import 'dart:io';
 
+import 'package:brew_diary/db/brewing_result.dart';
+import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../db/db_helper.dart';
 import 'add_edit_entry_screen.dart';
 
 class EntryDetailScreen extends StatelessWidget {
-  final Map<String, dynamic> entry;
+  final BrewingResult entry;
 
   const EntryDetailScreen({super.key, required this.entry});
 
   /// Builds the image section if an image path exists.
   Widget _buildImageSection() {
-    if (entry['imagePath'] != null &&
-        (entry['imagePath'] as String).isNotEmpty) {
+    if (entry.imagePath != null && (entry.imagePath as String).isNotEmpty) {
       debugPrint("Image found. Building image section.");
       return Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Image.file(
-          File(entry['imagePath']),
+          File(entry.imagePath!),
           height: 200,
           width: double.infinity,
           fit: BoxFit.cover,
@@ -31,67 +33,70 @@ class EntryDetailScreen extends StatelessWidget {
 
   /// Builds the detailed view of the entry.
   Widget _buildEntryDetails(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final dbHelper = DBHelper();
     return ListView(
       children: [
         _buildImageSection(),
+        // TODO: load methods and use name
         Text(
-          'Метод: ${entry['method']}',
+          '${l10n.brewingMethod}: ${entry.methodId}',
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 8),
-        Text('Кофе: ${entry['coffeeGrams']} г'),
-        Text('Вода: ${entry['waterVolume']} мл'),
-        Text('Температура: ${entry['temperature']}°C'),
+        Text('${l10n.coffee}: ${entry.coffeeGrams} ${l10n.g}'),
+        Text('${l10n.water}: ${entry.waterVolume} ${l10n.ml}'),
+        Text('${l10n.waterTemperature}: ${entry.temperature}${l10n.celsius}'),
         const Divider(),
-        Text('Аромат: ${entry['aroma']}'),
-        Text('Кислотность: ${entry['acidity']}'),
-        Text('Сладость: ${entry['sweetness']}'),
-        Text('Тело напитка: ${entry['body']}'),
+        Text('${l10n.aroma}: ${entry.aroma}'),
+        Text('${l10n.acidity}: ${entry.acidity}'),
+        Text('${l10n.sweetness}: ${entry.sweetness}'),
+        Text('${l10n.body}: ${entry.body}'),
         const Divider(),
-        if (entry['notes'] != null &&
-            entry['notes'].toString().trim().isNotEmpty)
+        if (entry.notes != null && entry.notes.toString().trim().isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              'Заметки: ${entry['notes']}',
+              '${l10n.notes}: ${entry.notes}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-        FutureBuilder<Map<String, dynamic>?>(
-          future: entry['recipeId'] != null
-              ? DBHelper().getRecipeById(entry['recipeId'])
+        FutureBuilder<Recipe?>(
+          future: entry.recipeId != null
+              ? dbHelper.getRecipeById(entry.recipeId!)
               : Future.value(null),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Text('Загрузка рецепта...');
+              return Text(l10n.loadingRecipe);
             } else if (snapshot.hasData && snapshot.data != null) {
               final recipe = snapshot.data!;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Рецепт: ${recipe['name']}'),
-                  Text('Описание: ${recipe['description']}'),
+                  Text('${l10n.recipe}: ${recipe.name}'),
+                  Text('${l10n.description}: ${recipe.description}'),
                 ],
               );
             } else {
-              return const Text('Рецепт не выбран');
+              return Text(l10n.noRecipeSelected);
             }
           },
         ),
         const Divider(),
-        Text('Дата: ${entry['timestamp']}'),
+        Text('${l10n.date}: ${entry.timestamp}'),
       ],
     );
   }
 
   /// Displays a confirmation dialog before deleting the entry.
   Future<bool> _showDeleteConfirmationDialog(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     debugPrint("Showing delete confirmation dialog.");
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Удалить запись?'),
-        content: const Text('Вы уверены, что хотите удалить эту запись?'),
+        title: Text(l10n.deleteEntry),
+        content: Text(l10n.deleteConfirmation),
         actions: [
           TextButton(
             onPressed: () {
@@ -105,7 +110,7 @@ class EntryDetailScreen extends StatelessWidget {
               debugPrint("User confirmed deletion.");
               Navigator.pop(context, true);
             },
-            child: const Text('Да'),
+            child: Text(l10n.yes),
           ),
         ],
       ),
@@ -115,19 +120,23 @@ class EntryDetailScreen extends StatelessWidget {
 
   /// Handles the deletion process of the entry.
   Future<void> _handleDelete(BuildContext context) async {
+    final dbHelper = DBHelper();
     final shouldDelete = await _showDeleteConfirmationDialog(context);
     if (shouldDelete) {
-      debugPrint("Deleting entry with ID: ${entry['id']}");
-      await DBHelper().deleteBrewingResult(entry['id']);
-      Navigator.pop(context, true);
+      debugPrint("Deleting entry with ID: ${entry.id}");
+      await dbHelper.deleteBrewingMethod(entry.id!);
+      if (context.mounted) {
+        Navigator.pop(context, true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Детали записи'),
+        title: Text(l10n.entryDetails),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
@@ -153,7 +162,9 @@ class EntryDetailScreen extends StatelessWidget {
           );
           if (updatedEntry != null) {
             debugPrint("Entry updated. Returning to previous screen.");
-            Navigator.pop(context, true);
+            if (context.mounted) {
+              Navigator.pop(context, true);
+            }
           }
         },
       ),

@@ -1,16 +1,20 @@
+import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../db/db_helper.dart';
+
 class BrewGuideScreen extends StatefulWidget {
-  final Map<String, dynamic> recipe;
+  final Recipe recipe;
 
   const BrewGuideScreen({super.key, required this.recipe});
 
   @override
-  _BrewGuideScreenState createState() => _BrewGuideScreenState();
+  State<BrewGuideScreen> createState() => _BrewGuideScreenState();
 }
 
 class _BrewGuideScreenState extends State<BrewGuideScreen> {
+  final dbHelper = DBHelper();
   late List<String> steps;
   int currentStepIndex = 0;
   late PageController _pageController;
@@ -18,7 +22,7 @@ class _BrewGuideScreenState extends State<BrewGuideScreen> {
   @override
   void initState() {
     super.initState();
-    steps = widget.recipe['instructions']
+    steps = widget.recipe.instructions
         .toString()
         .split('\n')
         .where((s) => s.trim().isNotEmpty)
@@ -49,7 +53,7 @@ class _BrewGuideScreenState extends State<BrewGuideScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${l10n.steps} ${index + 1}',
+                        '${l10n.step} ${index + 1}',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 16),

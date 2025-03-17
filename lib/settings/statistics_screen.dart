@@ -1,3 +1,4 @@
+import 'package:brew_diary/db/brewing_result.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -7,11 +8,12 @@ class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
   @override
-  _StatisticsScreenState createState() => _StatisticsScreenState();
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
-  List<Map<String, dynamic>> _results = [];
+  final dbHelper = DBHelper();
+  List<BrewingResult> _results = [];
   bool _isLoading = true;
 
   @override
@@ -21,18 +23,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Future<void> _loadResults() async {
-    final results = await DBHelper().getBrewingResults();
+    final results = await dbHelper.getBrewingResults();
     setState(() {
       _results = results;
       _isLoading = false;
     });
   }
 
-  double calculateOverallRating(Map<String, dynamic> entry) {
-    double aroma = (entry['aroma'] ?? 0);
-    double acidity = (entry['acidity'] ?? 0);
-    double sweetness = (entry['sweetness'] ?? 0);
-    double body = (entry['body'] ?? 0);
+  double calculateOverallRating(BrewingResult entry) {
+    double aroma = (entry.aroma);
+    double acidity = (entry.acidity);
+    double sweetness = (entry.sweetness);
+    double body = (entry.body);
     return (aroma + acidity + sweetness + body) / 4;
   }
 

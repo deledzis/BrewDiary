@@ -1,5 +1,5 @@
 class GrinderClickSetting {
-  final int? id;
+  int? id;
   final int grinderId;
   final int grindSizeId;
   final int minClicks;
@@ -12,6 +12,10 @@ class GrinderClickSetting {
     required this.minClicks,
     required this.maxClicks,
   });
+
+  void setId(int id) {
+    this.id = id;
+  }
 
   Map<String, dynamic> toMap() {
     return {

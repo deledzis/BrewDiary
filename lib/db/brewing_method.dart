@@ -1,8 +1,8 @@
 class BrewingMethod {
-  final int? id;
+  final int id;
   final String name;
 
-  BrewingMethod({this.id, required this.name});
+  BrewingMethod({required this.id, required this.name});
 
   Map<String, dynamic> toMap() {
     return {
@@ -13,7 +13,7 @@ class BrewingMethod {
 
   factory BrewingMethod.fromMap(Map<String, dynamic> map) {
     return BrewingMethod(
-      id: map['id'] as int?,
+      id: map['id'] as int,
       name: map['name'] as String,
     );
   }

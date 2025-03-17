@@ -3,9 +3,9 @@ class Recipe {
   final String name;
   final String description;
   final String instructions;
-  final int? grindSizeId;
+  final int grindSizeId;
   final bool isFavorite;
-  final int? methodId;
+  final int methodId;
   final int coffeeGrams;
   final int waterVolume;
   final int waterTemperature;
@@ -17,9 +17,9 @@ class Recipe {
     required this.name,
     required this.description,
     required this.instructions,
-    this.grindSizeId,
+    required this.grindSizeId,
     this.isFavorite = false,
-    this.methodId,
+    required this.methodId,
     required this.coffeeGrams,
     required this.waterVolume,
     required this.waterTemperature,
@@ -50,9 +50,9 @@ class Recipe {
       name: map['name'] as String,
       description: map['description'] as String,
       instructions: map['instructions'] as String,
-      grindSizeId: map['grind_size_id'] as int?,
+      grindSizeId: map['grind_size_id'] as int,
       isFavorite: (map['is_favorite'] as int?) == 1,
-      methodId: map['method_id'] as int?,
+      methodId: map['method_id'] as int,
       coffeeGrams: map['coffee_grams'] as int,
       waterVolume: map['water_volume'] as int,
       waterTemperature: map['water_temperature'] as int,

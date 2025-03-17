@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:brew_diary/db/brewing_method.dart';
+import 'package:brew_diary/db/brewing_result.dart';
+import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,15 +10,17 @@ import 'package:image_picker/image_picker.dart';
 import '../db/db_helper.dart';
 
 class AddEditEntryScreen extends StatefulWidget {
-  final Map<String, dynamic>? entry;
+  final BrewingResult? entry;
 
   const AddEditEntryScreen({super.key, this.entry});
 
   @override
-  _AddEditEntryScreenState createState() => _AddEditEntryScreenState();
+  State<AddEditEntryScreen> createState() => _AddEditEntryScreenState();
 }
 
 class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
+  final dbHelper = DBHelper();
+
   // Form key for validation
   final _formKey = GlobalKey<FormState>();
 
@@ -34,8 +39,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   // Recipes loading state
   bool _isRecipesLoading = true;
   bool _isMethodsLoading = true;
-  List<Map<String, dynamic>> _recipes = [];
-  List<Map<String, dynamic>> _brewingMethods = [];
+  List<Recipe> _recipes = [];
+  List<BrewingMethod> _brewingMethods = [];
   int? _selectedRecipeId;
   int? _selectedMethodId;
 
@@ -48,22 +53,21 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     debugPrint("Initializing AddEditEntryScreen");
 
     // Initialize controllers with existing data (for editing) or empty strings (for new entry)
-    _coffeeGramsController = TextEditingController(
-        text: widget.entry?['coffeeGrams']?.toString() ?? '');
-    _waterVolumeController = TextEditingController(
-        text: widget.entry?['waterVolume']?.toString() ?? '');
-    _temperatureController = TextEditingController(
-        text: widget.entry?['temperature']?.toString() ?? '');
-    _notesController =
-        TextEditingController(text: widget.entry?['notes'] ?? '');
+    _coffeeGramsController =
+        TextEditingController(text: widget.entry?.coffeeGrams.toString() ?? '');
+    _waterVolumeController =
+        TextEditingController(text: widget.entry?.waterVolume.toString() ?? '');
+    _temperatureController =
+        TextEditingController(text: widget.entry?.temperature.toString() ?? '');
+    _notesController = TextEditingController(text: widget.entry?.notes ?? '');
 
     // Initialize taste parameters and selected recipe/image if available
-    _aroma = widget.entry?['aroma'] as double? ?? 3.0;
-    _acidity = widget.entry?['acidity'] as double? ?? 3.0;
-    _sweetness = widget.entry?['sweetness'] as double? ?? 3.0;
-    _body = widget.entry?['body'] as double? ?? 3.0;
-    _selectedRecipeId = widget.entry?['recipeId'];
-    _imagePath = widget.entry?['imagePath'];
+    _aroma = widget.entry?.aroma ?? 3.0;
+    _acidity = widget.entry?.acidity ?? 3.0;
+    _sweetness = widget.entry?.sweetness ?? 3.0;
+    _body = widget.entry?.body ?? 3.0;
+    _selectedRecipeId = widget.entry?.recipeId;
+    _imagePath = widget.entry?.imagePath;
 
     // Load data from the database
     _loadRecipes();
@@ -86,13 +90,13 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     setState(() {
       _isMethodsLoading = true;
     });
-    final methods = await DBHelper().getMethods();
+    final methods = await dbHelper.getBrewingMethods();
     setState(() {
       _brewingMethods = methods;
       // Validate if the selected method exists in the loaded methods.
       if (_selectedMethodId != null) {
         final methodExists =
-            _brewingMethods.any((method) => method['id'] == _selectedMethodId);
+            _brewingMethods.any((method) => method.id == _selectedMethodId);
         if (!methodExists) {
           _selectedMethodId = null;
           debugPrint(
@@ -110,7 +114,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     setState(() {
       _isRecipesLoading = true;
     });
-    final recipes = await DBHelper().getRecipes();
+    final recipes = await dbHelper.getRecipes();
     debugPrint("Number of recipes loaded: ${recipes.length}");
 
     setState(() {
@@ -118,7 +122,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
       // If a recipe was previously selected but is not found in the loaded list, reset the selection
       if (_selectedRecipeId != null) {
         final recipeExists =
-            _recipes.any((recipe) => recipe['id'] == _selectedRecipeId);
+            _recipes.any((recipe) => recipe.id == _selectedRecipeId);
         if (!recipeExists) {
           _selectedRecipeId = null;
           debugPrint(
@@ -157,6 +161,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       debugPrint("Form validated. Preparing data for saving.");
       final entryData = {
+        'id': widget.entry?.id,
         'method_id': _selectedMethodId,
         'coffeeGrams': int.tryParse(_coffeeGramsController.text) ?? 0,
         'waterVolume': int.tryParse(_waterVolumeController.text) ?? 0,
@@ -169,17 +174,20 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
         'recipeId': _selectedRecipeId,
         'imagePath': _imagePath,
         'notes': _notesController.text,
+        'created_date': DateTime.now().toIso8601String(),
       };
+      final brewingResult = BrewingResult.fromMap(entryData);
 
-      // If editing an existing entry, include its ID and update it in the database
       if (widget.entry != null) {
-        entryData['id'] = widget.entry!['id'];
-        await DBHelper().updateBrewingResult(entryData);
-        debugPrint("Entry updated with ID: ${widget.entry!['id']}");
+        await DBHelper().updateBrewingResult(brewingResult);
+        debugPrint("Entry updated with ID: ${widget.entry!.id}");
       } else {
+        await dbHelper.insertBrewingResult(brewingResult);
         debugPrint("New entry created");
       }
-      Navigator.of(context).pop(entryData);
+      if (mounted) {
+        Navigator.of(context).pop(entryData);
+      }
     } else {
       debugPrint("Form validation failed");
     }
@@ -229,9 +237,9 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     }
 
     // Creating a unique list of recipes by ID
-    final Map<int, Map<String, dynamic>> uniqueRecipes = {};
+    final Map<int, Recipe> uniqueRecipes = {};
     for (var recipe in _recipes) {
-      final id = recipe['id'] as int;
+      final id = recipe.id!;
       uniqueRecipes[id] = recipe;
     }
     final uniqueRecipesList = uniqueRecipes.values.toList();
@@ -253,8 +261,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
             ),
             ...uniqueRecipesList.map((recipe) {
               return DropdownMenuItem<int?>(
-                value: recipe['id'] as int,
-                child: Text(recipe['name']),
+                value: recipe.id,
+                child: Text(recipe.name),
               );
             }),
           ],
@@ -314,8 +322,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
                       ),
                       ..._brewingMethods.map((method) {
                         return DropdownMenuItem<int?>(
-                          value: method['id'] as int,
-                          child: Text(method['name']),
+                          value: method.id,
+                          child: Text(method.name),
                         );
                       }),
                     ],
@@ -349,6 +357,8 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   }
 
   /// Section for brewing parameters input (coffee, water, temperature).
+  /// TODO: add link with recipe in this section, when recipe is selected,
+  /// prefill values from recipe
   Widget _buildBrewingParametersSection(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
