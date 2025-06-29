@@ -1,13 +1,12 @@
-import 'dart:io';
-
-import 'package:brew_diary/db/brewing_method.dart';
 import 'package:brew_diary/db/brewing_result.dart';
 import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../db/db_helper.dart';
+import '../domain/provider/brewing_methods_provider.dart';
+import '../domain/provider/grind_sizes_provider.dart';
 
 class AddEditEntryScreen extends StatefulWidget {
   final BrewingResult? entry;
@@ -36,16 +35,12 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   double _sweetness = 3.0;
   double _body = 3.0;
 
-  // Recipes loading state
-  bool _isRecipesLoading = true;
-  bool _isMethodsLoading = true;
   List<Recipe> _recipes = [];
-  List<BrewingMethod> _brewingMethods = [];
   int? _selectedRecipeId;
   int? _selectedMethodId;
+  int? _selectedGrindSizeId;
 
-  // Path for the selected image
-  String? _imagePath;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -57,21 +52,23 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
         TextEditingController(text: widget.entry?.coffeeGrams.toString() ?? '');
     _waterVolumeController =
         TextEditingController(text: widget.entry?.waterVolume.toString() ?? '');
-    _temperatureController =
-        TextEditingController(text: widget.entry?.temperature.toString() ?? '');
+    _temperatureController = TextEditingController(
+        text: widget.entry?.waterTemperature.toString() ?? '');
     _notesController = TextEditingController(text: widget.entry?.notes ?? '');
 
-    // Initialize taste parameters and selected recipe/image if available
     _aroma = widget.entry?.aroma ?? 3.0;
     _acidity = widget.entry?.acidity ?? 3.0;
     _sweetness = widget.entry?.sweetness ?? 3.0;
     _body = widget.entry?.body ?? 3.0;
     _selectedRecipeId = widget.entry?.recipeId;
-    _imagePath = widget.entry?.imagePath;
+    _selectedMethodId = widget.entry?.methodId;
+    _selectedGrindSizeId = widget.entry?.grindSizeId;
+
+    debugPrint(
+        "Initialized with methodId: $_selectedMethodId, grindSizeId: $_selectedGrindSizeId");
 
     // Load data from the database
     _loadRecipes();
-    _loadBrewingMethods();
   }
 
   @override
@@ -84,35 +81,11 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     super.dispose();
   }
 
-  /// Loads brewing methods from the database and validates the selected method.
-  Future<void> _loadBrewingMethods() async {
-    debugPrint("Loading brewing methods from DB");
-    setState(() {
-      _isMethodsLoading = true;
-    });
-    final methods = await dbHelper.getBrewingMethods();
-    setState(() {
-      _brewingMethods = methods;
-      // Validate if the selected method exists in the loaded methods.
-      if (_selectedMethodId != null) {
-        final methodExists =
-            _brewingMethods.any((method) => method.id == _selectedMethodId);
-        if (!methodExists) {
-          _selectedMethodId = null;
-          debugPrint(
-              "Selected method ID not found. Resetting _selectedMethodId.");
-        }
-      }
-      _isMethodsLoading = false;
-      debugPrint("Brewing methods loaded: ${_brewingMethods.length}");
-    });
-  }
-
   /// Loads recipes from the database and updates the state.
   Future<void> _loadRecipes() async {
     debugPrint("Loading recipes from the database");
     setState(() {
-      _isRecipesLoading = true;
+      _isLoading = true;
     });
     final recipes = await dbHelper.getRecipes();
     debugPrint("Number of recipes loaded: ${recipes.length}");
@@ -129,30 +102,9 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
               "Previously selected recipe not found, resetting selection");
         }
       }
-      _isRecipesLoading = false;
     });
-  }
-
-  /// Picks an image from the gallery.
-  Future<void> _pickImage() async {
-    debugPrint("Picking image from gallery");
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _imagePath = image.path;
-      });
-      debugPrint("Image selected: ${image.path}");
-    } else {
-      debugPrint("No image selected");
-    }
-  }
-
-  /// Removes the selected image.
-  void _removeImage() {
-    debugPrint("Removing selected image");
     setState(() {
-      _imagePath = null;
+      _isLoading = false;
     });
   }
 
@@ -160,19 +112,21 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       debugPrint("Form validated. Preparing data for saving.");
+      debugPrint(
+          "Saving methodId: $_selectedMethodId, grindSizeId: $_selectedGrindSizeId");
       final entryData = {
         'id': widget.entry?.id,
         'method_id': _selectedMethodId,
-        'coffeeGrams': int.tryParse(_coffeeGramsController.text) ?? 0,
-        'waterVolume': int.tryParse(_waterVolumeController.text) ?? 0,
-        'temperature': int.tryParse(_temperatureController.text) ?? 0,
+        'coffee_grams': int.tryParse(_coffeeGramsController.text) ?? 0,
+        'water_volume': int.tryParse(_waterVolumeController.text) ?? 0,
+        'water_temperature': int.tryParse(_temperatureController.text) ?? 0,
         'aroma': _aroma,
+        'grind_size_id': _selectedGrindSizeId,
         'acidity': _acidity,
         'sweetness': _sweetness,
         'body': _body,
         'timestamp': DateTime.now().toIso8601String(),
-        'recipeId': _selectedRecipeId,
-        'imagePath': _imagePath,
+        'recipe_id': _selectedRecipeId,
         'notes': _notesController.text,
         'created_date': DateTime.now().toIso8601String(),
       };
@@ -215,7 +169,7 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   /// Builds the recipe dropdown widget.
   Widget _buildRecipeDropdown(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    if (_isRecipesLoading) {
+    if (_isLoading) {
       return Container(
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
@@ -280,6 +234,9 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
   /// Builds the brewing method dropdown section.
   Widget _buildBrewingMethodSection(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final brewingMethodProvider = context.watch<BrewingMethodProvider>();
+    final methods = brewingMethodProvider.getAllMethods();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -294,47 +251,84 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
             borderRadius: BorderRadius.circular(8),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: _isMethodsLoading
-              ? Container(
-                  height: 48,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 12),
-                      Text(l10n.loading),
-                    ],
-                  ),
-                )
-              : DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
-                    isExpanded: true,
-                    value: _selectedMethodId,
-                    hint: Text(l10n.selectMethod),
-                    items: [
-                      DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text(l10n.notSpecified),
-                      ),
-                      ..._brewingMethods.map((method) {
-                        return DropdownMenuItem<int?>(
-                          value: method.id,
-                          child: Text(method.name),
-                        );
-                      }),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedMethodId = value;
-                      });
-                      debugPrint("Selected brewing method ID: $value");
-                    },
-                  ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int?>(
+              isExpanded: true,
+              value: _selectedMethodId,
+              hint: Text(l10n.selectMethod),
+              items: [
+                DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text(l10n.notSpecified),
                 ),
+                ...methods.map((method) {
+                  return DropdownMenuItem<int?>(
+                    value: method.id,
+                    child: Text(DBHelper.getLocalizedBrewingMethod(
+                        method.code, context)),
+                  );
+                }),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedMethodId = value;
+                });
+                debugPrint(
+                    "Selected brewing method ID: $value (previous: ${widget.entry?.methodId})");
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the grind size dropdown section.
+  Widget _buildGrindSizeSection(AppLocalizations l10n) {
+    final grindSizesProvider = context.watch<GrindSizesProvider>();
+    final grindSizes = grindSizesProvider.getAllGrindSizes();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.grindSize,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int?>(
+              isExpanded: true,
+              value: _selectedGrindSizeId,
+              hint: Text(l10n.selectGrindSize),
+              items: [
+                DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text(l10n.notSpecified),
+                ),
+                ...grindSizes.map((grindSize) {
+                  return DropdownMenuItem<int?>(
+                    value: grindSize.id,
+                    child: Text(DBHelper.getLocalizedGrindSize(
+                        grindSize.code, context)),
+                  );
+                }),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedGrindSizeId = value;
+                });
+                debugPrint(
+                    "Selected grind size: $value (previous: ${widget.entry?.grindSizeId})");
+              },
+            ),
+          ),
         ),
       ],
     );
@@ -529,41 +523,6 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
     );
   }
 
-  /// Section for image selection and display.
-  Widget _buildImageSection(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.coverPhoto,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        _imagePath != null
-            ? Image.file(File(_imagePath!), height: 150)
-            : Text(l10n.notSelected),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            ElevatedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.image),
-              label: Text(l10n.addReplace),
-            ),
-            const SizedBox(width: 16),
-            if (_imagePath != null)
-              ElevatedButton.icon(
-                onPressed: _removeImage,
-                icon: const Icon(Icons.delete),
-                label: Text(l10n.delete),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
   /// Main build method assembling the widget tree.
   @override
   Widget build(BuildContext context) {
@@ -587,13 +546,13 @@ class _AddEditEntryScreenState extends State<AddEditEntryScreen> {
             children: [
               _buildBrewingMethodSection(context),
               const SizedBox(height: 24),
+              _buildGrindSizeSection(l10n),
+              const SizedBox(height: 24),
               _buildRecipeSection(context),
               const SizedBox(height: 24),
               _buildBrewingParametersSection(context),
               const SizedBox(height: 24),
               _buildTasteAttributesSection(context),
-              const SizedBox(height: 24),
-              _buildImageSection(context),
               const SizedBox(height: 24),
               _buildNotesSection(context),
               const SizedBox(height: 32),

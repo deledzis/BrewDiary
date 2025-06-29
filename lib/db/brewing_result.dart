@@ -1,32 +1,32 @@
 class BrewingResult {
   final int? id;
-  final int methodId;
+  final int? methodId;
   final int coffeeGrams;
   final int waterVolume;
-  final int temperature;
+  final int waterTemperature;
+  final int? grindSizeId;
   final double aroma;
   final double acidity;
   final double sweetness;
   final double body;
   final DateTime timestamp;
   final int? recipeId;
-  final String? imagePath;
   final String? notes;
   final DateTime createdDate;
 
   BrewingResult({
     this.id,
-    required this.methodId,
+    this.methodId,
     required this.coffeeGrams,
     required this.waterVolume,
-    required this.temperature,
+    required this.waterTemperature,
+    this.grindSizeId,
     required this.aroma,
     required this.acidity,
     required this.sweetness,
     required this.body,
     required this.timestamp,
     this.recipeId,
-    this.imagePath,
     this.notes,
     required this.createdDate,
   });
@@ -35,16 +35,16 @@ class BrewingResult {
     return {
       'id': id,
       'method_id': methodId,
-      'coffeeGrams': coffeeGrams,
-      'waterVolume': waterVolume,
-      'temperature': temperature,
+      'coffee_grams': coffeeGrams,
+      'water_volume': waterVolume,
+      'water_temperature': waterTemperature,
+      'grind_size_id': grindSizeId,
       'aroma': aroma,
       'acidity': acidity,
       'sweetness': sweetness,
       'body': body,
       'timestamp': timestamp.toIso8601String(),
-      'recipeId': recipeId,
-      'imagePath': imagePath,
+      'recipe_id': recipeId,
       'notes': notes,
       'created_date': createdDate.toIso8601String(),
     };
@@ -53,10 +53,11 @@ class BrewingResult {
   factory BrewingResult.fromMap(Map<String, dynamic> map) {
     return BrewingResult(
       id: map['id'] as int?,
-      methodId: map['method_id'] as int,
-      coffeeGrams: map['coffeeGrams'] as int,
-      waterVolume: map['waterVolume'] as int,
-      temperature: map['temperature'] as int,
+      methodId: map['method_id'] as int?,
+      coffeeGrams: map['coffee_grams'] as int,
+      waterVolume: map['water_volume'] as int,
+      waterTemperature: map['water_temperature'] as int,
+      grindSizeId: map['grind_size_id'] as int?,
       aroma: map['aroma'] is int
           ? (map['aroma'] as int).toDouble()
           : map['aroma'] as double,
@@ -70,8 +71,7 @@ class BrewingResult {
           ? (map['body'] as int).toDouble()
           : map['body'] as double,
       timestamp: DateTime.parse(map['timestamp'] as String),
-      recipeId: map['recipeId'] as int?,
-      imagePath: map['imagePath'] as String?,
+      recipeId: map['recipe_id'] as int?,
       notes: map['notes'] as String?,
       createdDate: DateTime.parse(map['created_date'] as String),
     );

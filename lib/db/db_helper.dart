@@ -30,6 +30,25 @@ class DBHelper {
   static const String _grindMediumCoarse = 'medium_coarse';
   static const String _grindCoarse = 'coarse';
 
+  // Brewing methods constants
+  static const String _methodV60 = 'v60';
+  static const String _methodEspresso = 'espresso';
+  static const String _methodAeropress = 'aeropress';
+
+  static String getLocalizedBrewingMethod(String code, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (code) {
+      case _methodV60:
+        return l10n.v60;
+      case _methodEspresso:
+        return l10n.espresso;
+      case _methodAeropress:
+        return l10n.aeropress;
+      default:
+        return code;
+    }
+  }
+
   static String getLocalizedGrindSize(String code, BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     switch (code) {
@@ -68,13 +87,9 @@ class DBHelper {
     await db.execute('''
           CREATE TABLE brewing_methods(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT
+            code TEXT UNIQUE NOT NULL
           )
         ''');
-    // Insert default brewing methods
-    await db.insert('brewing_methods', {'name': 'V60'});
-    await db.insert('brewing_methods', {'name': 'Espresso'});
-    await db.insert('brewing_methods', {'name': 'Aeropress'});
     await db.execute('''
           CREATE TABLE users(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,23 +100,28 @@ class DBHelper {
           );
         ''');
     await db.execute('''
-          CREATE TABLE brewing_results(
+          CREATE TABLE grinders(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            method_id INTEGER,
-            coffeeGrams INTEGER,
-            waterVolume INTEGER,
-            temperature INTEGER,
-            aroma REAL,
-            acidity REAL,
-            sweetness REAL,
-            body REAL,
-            timestamp TEXT,
-            recipeId INTEGER,
-            imagePath TEXT,
-            notes TEXT,
-            created_date TEXT,
-            FOREIGN KEY (method_id) REFERENCES brewing_methods(id)
+            name TEXT,
+            notes TEXT
           )
+        ''');
+    await db.execute('''
+          CREATE TABLE grind_sizes(
+            id INTEGER PRIMARY KEY,
+            code TEXT UNIQUE NOT NULL
+          )
+        ''');
+    await db.execute('''
+          CREATE TABLE grinder_click_settings(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            grinder_id INTEGER,
+            grind_size_id INTEGER,
+            min_clicks INTEGER,
+            max_clicks INTEGER,
+            FOREIGN KEY (grinder_id) REFERENCES grinders(id),
+            FOREIGN KEY (grind_size_id) REFERENCES grind_sizes(id)
+          );
         ''');
     await db.execute('''
           CREATE TABLE recipes(
@@ -122,18 +142,31 @@ class DBHelper {
           )
         ''');
     await db.execute('''
-          CREATE TABLE grinders(
+          CREATE TABLE brewing_results(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            notes TEXT
+            method_id INTEGER,
+            coffee_grams INTEGER,
+            water_volume INTEGER,
+            water_temperature INTEGER,
+            grind_size_id INTEGER,
+            aroma REAL,
+            acidity REAL,
+            sweetness REAL,
+            body REAL,
+            timestamp TEXT,
+            recipe_id INTEGER,
+            notes TEXT,
+            created_date TEXT,
+            FOREIGN KEY (method_id) REFERENCES brewing_methods(id),
+            FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+            FOREIGN KEY (grind_size_id) REFERENCES grind_sizes(id)
           )
         ''');
-    await db.execute('''
-          CREATE TABLE grind_sizes(
-            id INTEGER PRIMARY KEY,
-            code TEXT UNIQUE NOT NULL
-          )
-        ''');
+
+    // Insert default values
+    await db.insert('brewing_methods', {'id': 1, 'code': _methodV60});
+    await db.insert('brewing_methods', {'id': 2, 'code': _methodEspresso});
+    await db.insert('brewing_methods', {'id': 3, 'code': _methodAeropress});
     await db.insert('grind_sizes', {'id': 1, 'code': _grindTurkish});
     await db.insert('grind_sizes', {'id': 2, 'code': _grindExtraFine});
     await db.insert('grind_sizes', {'id': 3, 'code': _grindFine});
@@ -141,18 +174,6 @@ class DBHelper {
     await db.insert('grind_sizes', {'id': 5, 'code': _grindMedium});
     await db.insert('grind_sizes', {'id': 6, 'code': _grindMediumCoarse});
     await db.insert('grind_sizes', {'id': 7, 'code': _grindCoarse});
-
-    await db.execute('''
-          CREATE TABLE grinder_click_settings(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            grinder_id INTEGER,
-            grind_size_id INTEGER,
-            min_clicks INTEGER,
-            max_clicks INTEGER,
-            FOREIGN KEY (grinder_id) REFERENCES grinders(id),
-            FOREIGN KEY (grind_size_id) REFERENCES grind_sizes(id)
-          );
-        ''');
   }
 
   /*
@@ -268,7 +289,7 @@ class DBHelper {
   Future<List<BrewingMethod>> getBrewingMethods() async {
     final db = await database;
     final List<Map<String, dynamic>> maps =
-        await db.query('brewing_methods', orderBy: 'name');
+        await db.query('brewing_methods', orderBy: 'id');
     return maps.map((map) => BrewingMethod.fromMap(map)).toList();
   }
 

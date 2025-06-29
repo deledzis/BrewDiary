@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:brew_diary/db/brewing_result.dart';
 import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
@@ -8,27 +6,171 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../db/db_helper.dart';
 import 'add_edit_entry_screen.dart';
 
-class EntryDetailScreen extends StatelessWidget {
+class EntryDetailsScreen extends StatefulWidget {
   final BrewingResult entry;
 
-  const EntryDetailScreen({super.key, required this.entry});
+  const EntryDetailsScreen({super.key, required this.entry});
 
-  /// Builds the image section if an image path exists.
-  Widget _buildImageSection() {
-    if (entry.imagePath != null && (entry.imagePath as String).isNotEmpty) {
-      debugPrint("Image found. Building image section.");
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Image.file(
-          File(entry.imagePath!),
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-      );
+  @override
+  State<EntryDetailsScreen> createState() => _EntryDetailsScreenState();
+}
+
+class _EntryDetailsScreenState extends State<EntryDetailsScreen> {
+  final dbHelper = DBHelper();
+  late BrewingResult entry;
+  String _brewingMethodName = '';
+  String _grindSizeName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    entry = widget.entry;
+    debugPrint("Initializing EntryDetailsScreen");
+    _loadBrewingMethodName();
+    _loadGrindSizeName();
+  }
+
+  /// Loads the brewing method name for the entry.
+  Future<void> _loadBrewingMethodName() async {
+    if (entry.methodId == null) {
+      setState(() {
+        _brewingMethodName = AppLocalizations.of(context)!.notSpecified;
+      });
+      return;
     }
-    debugPrint("No image provided. Returning empty widget.");
-    return const SizedBox.shrink();
+
+    final method = await dbHelper.getBrewingMethodById(entry.methodId!);
+    if (method != null) {
+      setState(() {
+        _brewingMethodName =
+            DBHelper.getLocalizedBrewingMethod(method.code, context);
+      });
+    } else {
+      setState(() {
+        _brewingMethodName = AppLocalizations.of(context)!.notSpecified;
+      });
+    }
+  }
+
+  /// Loads the grind size name for the entry.
+  Future<void> _loadGrindSizeName() async {
+    if (entry.grindSizeId == null) {
+      setState(() {
+        _grindSizeName = AppLocalizations.of(context)!.notSpecified;
+      });
+      return;
+    }
+
+    final grindSize = await dbHelper.getGrindSizeById(entry.grindSizeId!);
+    if (grindSize != null) {
+      setState(() {
+        _grindSizeName =
+            DBHelper.getLocalizedGrindSize(grindSize.code, context);
+      });
+    } else {
+      setState(() {
+        _grindSizeName = AppLocalizations.of(context)!.notSpecified;
+      });
+    }
+  }
+
+  /// Gets the localized grind size name for an entry.
+  String _getGrindSizeName(BrewingResult entry, BuildContext context) {
+    return _grindSizeName;
+  }
+
+  Widget _buildRecipeDetailsCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRowItem(
+              l10n.brewingMethod,
+              _brewingMethodName,
+              Icons.coffee,
+            ),
+            const Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.coffee,
+                    '${entry.coffeeGrams} ${l10n.g}',
+                    Icons.coffee_maker,
+                  ),
+                ),
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.grindSize,
+                    _getGrindSizeName(entry, context),
+                    Icons.grain,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.water,
+                    '${entry.waterVolume} ${l10n.ml}',
+                    Icons.water_drop,
+                  ),
+                ),
+                Expanded(
+                  child: _buildDetailRowItem(
+                    l10n.waterTemperature,
+                    '${entry.waterTemperature}${l10n.celsius}',
+                    Icons.thermostat,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRowItem(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Builds the detailed view of the entry.
@@ -37,16 +179,8 @@ class EntryDetailScreen extends StatelessWidget {
     final dbHelper = DBHelper();
     return ListView(
       children: [
-        _buildImageSection(),
-        // TODO: load methods and use name
-        Text(
-          '${l10n.brewingMethod}: ${entry.methodId}',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
         const SizedBox(height: 8),
-        Text('${l10n.coffee}: ${entry.coffeeGrams} ${l10n.g}'),
-        Text('${l10n.water}: ${entry.waterVolume} ${l10n.ml}'),
-        Text('${l10n.waterTemperature}: ${entry.temperature}${l10n.celsius}'),
+        _buildRecipeDetailsCard(context),
         const Divider(),
         Text('${l10n.aroma}: ${entry.aroma}'),
         Text('${l10n.acidity}: ${entry.acidity}'),
@@ -120,11 +254,10 @@ class EntryDetailScreen extends StatelessWidget {
 
   /// Handles the deletion process of the entry.
   Future<void> _handleDelete(BuildContext context) async {
-    final dbHelper = DBHelper();
     final shouldDelete = await _showDeleteConfirmationDialog(context);
     if (shouldDelete) {
       debugPrint("Deleting entry with ID: ${entry.id}");
-      await dbHelper.deleteBrewingMethod(entry.id!);
+      await dbHelper.deleteBrewingResult(entry.id!);
       if (context.mounted) {
         Navigator.pop(context, true);
       }

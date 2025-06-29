@@ -32,9 +32,9 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
 
   int? _selectedGrindSizeId;
   int? _selectedMethodId;
+  bool _isLoading = true;
   List<BrewingMethod> _brewingMethods = [];
   List<GrindSize> _grindSizes = [];
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -54,49 +54,29 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
         text: widget.recipe?.waterVolume.toString() ?? '');
     _selectedGrindSizeId = widget.recipe?.grindSizeId;
     _selectedMethodId = widget.recipe?.methodId;
-    _loadBrewingMethods();
+
+    _loadData();
   }
 
-  /// Loads brewing methods from the database and validates the selected method.
-  Future<void> _loadBrewingMethods() async {
-    debugPrint("Loading brewing methods from DB");
-    setState(() {
-      _isLoading = true;
-    });
-    final methods = await dbHelper.getBrewingMethods();
-    setState(() {
-      _brewingMethods = methods;
-      // Validate if the selected method exists in the loaded methods.
-      if (_selectedMethodId != null) {
-        final methodExists =
-            _brewingMethods.any((method) => method.id == _selectedMethodId);
-        if (!methodExists) {
-          _selectedMethodId = null;
-          debugPrint(
-              "Selected method ID not found. Resetting _selectedMethodId.");
-        }
-      }
-      debugPrint("Brewing methods loaded: ${_brewingMethods.length}");
-    });
-    _loadGrindSizes();
-  }
-
-  Future<void> _loadGrindSizes() async {
-    debugPrint("Loading grind sizes from DB");
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
+      final methods = await dbHelper.getBrewingMethods();
       final grindSizes = await dbHelper.getGrindSizes();
+
       setState(() {
+        _brewingMethods = methods;
         _grindSizes = grindSizes;
-        debugPrint("Grind sizes loaded: ${_grindSizes.length}");
         _isLoading = false;
       });
     } catch (e) {
-      // Handle error
-      debugPrint('Error loading grind sizes: $e');
+      debugPrint('Error loading data: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -218,7 +198,8 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                       ..._brewingMethods.map((method) {
                         return DropdownMenuItem<int>(
                           value: method.id,
-                          child: Text(method.name),
+                          child: Text(DBHelper.getLocalizedBrewingMethod(
+                              method.code, context)),
                         );
                       }),
                     ],

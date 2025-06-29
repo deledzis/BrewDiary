@@ -1,20 +1,20 @@
 class BrewingMethod {
   final int id;
-  final String name;
+  final String code;
 
-  BrewingMethod({required this.id, required this.name});
+  BrewingMethod({required this.id, required this.code});
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'name': name,
+      'code': code,
     };
   }
 
   factory BrewingMethod.fromMap(Map<String, dynamic> map) {
     return BrewingMethod(
       id: map['id'] as int,
-      name: map['name'] as String,
+      code: map['code'] as String,
     );
   }
 }

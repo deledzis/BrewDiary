@@ -9,24 +9,6 @@ import 'language_settings_screen.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  Widget _buildProfileStateWidget(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Имя пользователя',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Text(l10n.profileData),
-        ],
-      ),
-    );
-  }
-
   Widget _buildMenuList(BuildContext context) {
     return Column(
       children: [
@@ -113,7 +95,6 @@ class SettingsScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildProfileStateWidget(context),
           _buildMenuList(context),
         ],
       ),

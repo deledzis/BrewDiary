@@ -89,22 +89,6 @@ class _MyGrindersScreenState extends State<MyGrindersScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddEditGrinderScreen(
-                                      grinder: grinder,
-                                    ),
-                                  ),
-                                );
-                                if (result == true) {
-                                  _loadGrinders();
-                                }
-                              },
-                            ),
-                            IconButton(
                               icon: const Icon(Icons.delete),
                               onPressed: () => _confirmDelete(grinder),
                             ),

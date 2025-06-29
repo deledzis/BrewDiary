@@ -1,4 +1,3 @@
-import 'package:brew_diary/db/grind_size.dart';
 import 'package:brew_diary/db/recipe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -19,9 +18,8 @@ class RecipeDetailScreen extends StatefulWidget {
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   final dbHelper = DBHelper();
-  List<GrindSize> _grindSizes = [];
   late Recipe recipe;
-  late String _brewingMethodName;
+  String _brewingMethodName = '';
   bool _isLoading = true;
 
   @override
@@ -29,47 +27,42 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     super.initState();
     recipe = widget.recipe;
     debugPrint("Initializing RecipeDetailScreen");
-    _loadGrindSizes();
+    _loadBrewingMethodName();
   }
 
-  Future<void> _loadGrindSizes() async {
-    debugPrint("Loading grind sizes from DB");
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final grindSizes = await dbHelper.getGrindSizes();
+  /// Loads the brewing method name for the recipe.
+  Future<void> _loadBrewingMethodName() async {
+    if (recipe.methodId == null) {
       setState(() {
-        _grindSizes = grindSizes;
-        debugPrint("Grind sizes loaded: ${_grindSizes.length}");
-      });
-    } catch (e) {
-      // Handle error
-      debugPrint('Error loading grind sizes: $e');
-    }
-    _loadBrewingMethod();
-  }
-
-  Future<void> _loadBrewingMethod() async {
-    final l10n = AppLocalizations.of(context)!;
-    debugPrint("Loading brewing methods from DB");
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final methodId = recipe.methodId;
-      final method = await dbHelper.getBrewingMethodById(methodId);
-      setState(() {
-        _brewingMethodName = method?.name ?? l10n.notSpecified;
-        debugPrint("Brewing method loaded: $_brewingMethodName");
+        _brewingMethodName = AppLocalizations.of(context)!.notSpecified;
         _isLoading = false;
       });
-    } catch (e) {
-      // Handle error
-      debugPrint('Error loading grind sizes: $e');
+      return;
     }
+
+    final method = await dbHelper.getBrewingMethodById(recipe.methodId!);
+    if (method != null) {
+      setState(() {
+        _brewingMethodName =
+            DBHelper.getLocalizedBrewingMethod(method.code, context);
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _brewingMethodName = AppLocalizations.of(context)!.notSpecified;
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Gets the localized grind size name for a recipe.
+  String _getGrindSizeName(Recipe recipe, BuildContext context) {
+    if (recipe.grindSizeId == null) {
+      return AppLocalizations.of(context)!.notSpecified;
+    }
+    // For now, return not specified. You can implement proper grind size loading here
+    // similar to how brewing methods are handled
+    return AppLocalizations.of(context)!.notSpecified;
   }
 
   Widget _buildRunInstructionsButtonWidget(BuildContext context) {
@@ -109,7 +102,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             "${l10n.coffee}: ${recipe.coffeeGrams} ${l10n.g}\n"
             "${l10n.water}: ${recipe.waterVolume} ${l10n.ml}\n"
             "${l10n.waterTemperature}: ${recipe.waterTemperature}${l10n.celsius}\n"
-            "${l10n.brewingMethod}: ${recipe.instructions}";
+            "Instructions: ${recipe.instructions}";
         Share.share(shareContent, subject: recipe.name);
       },
     );
@@ -276,7 +269,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             // Instructions Section
             Text(
-              l10n.brewingMethod,
+              'Instructions',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -341,15 +334,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         child: const Icon(Icons.edit),
       ),
     );
-  }
-
-  String _getGrindSizeName(Recipe recipe, BuildContext context) {
-    final grindSizeId = recipe.grindSizeId;
-    final grindSize = _grindSizes.firstWhere(
-      (grindSize) => grindSize.id == grindSizeId,
-    );
-
-    return DBHelper.getLocalizedGrindSize(grindSize.code, context);
   }
 
   Future<void> _confirmDelete(BuildContext context) async {

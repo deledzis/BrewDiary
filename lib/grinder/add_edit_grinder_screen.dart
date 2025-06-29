@@ -20,8 +20,8 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
   final dbHelper = DBHelper();
 
   final _formKey = GlobalKey<FormState>();
-  List<GrindSize> _grindSizes = [];
   bool _isLoading = true;
+  List<GrindSize> _grindSizes = [];
 
   late TextEditingController _nameController;
   late TextEditingController _notesController;
@@ -40,33 +40,26 @@ class _AddEditGrinderScreenState extends State<AddEditGrinderScreen> {
     );
 
     _loadGrindSizes();
+    _loadGrinderClickSettings();
   }
 
   Future<void> _loadGrindSizes() async {
-    debugPrint("Loading grind sizes from DB");
-    setState(() {
-      _isLoading = true;
-    });
-
     try {
       final grindSizes = await dbHelper.getGrindSizes();
       setState(() {
         _grindSizes = grindSizes;
-        debugPrint("Grind sizes loaded: ${_grindSizes.length}");
-        // Fill controllers with saved values
-        for (final size in grindSizes) {
-          _clickControllers[size.id] = {
-            'min': TextEditingController(),
-            'max': TextEditingController(),
-          };
-        }
       });
+
+      // Initialize controllers for each grind size
+      for (final grindSize in grindSizes) {
+        _clickControllers[grindSize.id] = {
+          'min': TextEditingController(),
+          'max': TextEditingController(),
+        };
+      }
     } catch (e) {
-      // Handle error
       debugPrint('Error loading grind sizes: $e');
     }
-
-    _loadGrinderClickSettings();
   }
 
   Future<void> _loadGrinderClickSettings() async {
