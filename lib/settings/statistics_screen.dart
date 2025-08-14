@@ -41,7 +41,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    double totalBrews = _results.length.toDouble();
+    final int totalBrews = _results.length;
     double averageRating = 0;
     if (_results.isNotEmpty) {
       double sum = 0;

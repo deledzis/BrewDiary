@@ -207,12 +207,17 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: recipe.isFavorite
-                              ? const Icon(Icons.favorite, color: Colors.red)
-                              : const Icon(Icons.favorite_border),
-                          // TODO: replace with start button
-                          onPressed: () {},
+                                                 IconButton(
+                          icon: const Icon(Icons.play_arrow),
+                          tooltip: l10n.startBrewing,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RecipeDetailScreen(recipe: recipe),
+                              ),
+                            );
+                          },
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete),
@@ -256,12 +261,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
   Future<void> _confirmDelete(Recipe recipe) async {
     final l10n = AppLocalizations.of(context)!;
 
-    await showDialog<bool>(
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Delete ${recipe.name}?'),
-        content: Text(
-            'This will permanently delete this grinder and all its settings.'),
+        content: const Text(
+            'This will permanently delete this recipe.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -274,5 +279,14 @@ class _RecipesScreenState extends State<RecipesScreen> {
         ],
       ),
     );
+
+    if (confirm == true) {
+      await dbHelper.deleteRecipe(recipe.id!);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${recipe.name} ${l10n.delete}')),
+      );
+      _loadRecipes();
+    }
   }
 }

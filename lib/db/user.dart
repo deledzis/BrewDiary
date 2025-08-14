@@ -1,14 +1,14 @@
 class User {
   final int id;
   final String email;
-  final String password;
+  final String passwordHash;
   final String? nickname;
   final DateTime createdDate;
 
   User({
     required this.id,
     required this.email,
-    required this.password,
+    required this.passwordHash,
     this.nickname,
     required this.createdDate,
   });
@@ -17,7 +17,7 @@ class User {
     return {
       'id': id,
       'email': email,
-      'password': password,
+      'password_hash': passwordHash,
       'nickname': nickname,
       'created_date': createdDate.toIso8601String(),
     };
@@ -27,7 +27,7 @@ class User {
     return User(
       id: map['id'] as int,
       email: map['email'] as String,
-      password: map['password'] as String,
+      passwordHash: map['password_hash'] as String,
       nickname: map['nickname'] as String?,
       createdDate: DateTime.parse(map['created_date'] as String),
     );
