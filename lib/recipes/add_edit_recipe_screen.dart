@@ -51,7 +51,7 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
     _waterVolumeController = TextEditingController(
         text: widget.recipe?.waterVolume.toString() ?? '');
     _waterTemperatureController = TextEditingController(
-        text: widget.recipe?.waterVolume.toString() ?? '');
+        text: widget.recipe?.waterTemperature.toString() ?? '');
     _selectedGrindSizeId = widget.recipe?.grindSizeId;
     _selectedMethodId = widget.recipe?.methodId;
 
@@ -186,17 +186,17 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                   ),
                 )
               : DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
+                  child: DropdownButton<int?>(
                     isExpanded: true,
                     value: _selectedMethodId,
                     hint: Text(l10n.selectMethod),
                     items: [
-                      DropdownMenuItem<int>(
+                      DropdownMenuItem<int?>(
                         value: null,
                         child: Text(l10n.notSpecified),
                       ),
                       ..._brewingMethods.map((method) {
-                        return DropdownMenuItem<int>(
+                        return DropdownMenuItem<int?>(
                           value: method.id,
                           child: Text(DBHelper.getLocalizedBrewingMethod(
                               method.code, context)),
@@ -249,17 +249,17 @@ class _AddEditRecipeScreenState extends State<AddEditRecipeScreen> {
                   ),
                 )
               : DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
+                  child: DropdownButton<int?>(
                     isExpanded: true,
                     value: _selectedGrindSizeId,
                     hint: Text(l10n.selectGrindSize),
                     items: [
-                      DropdownMenuItem<int>(
+                      DropdownMenuItem<int?>(
                         value: null,
                         child: Text(l10n.notSpecified),
                       ),
                       ..._grindSizes.map((grindSize) {
-                        return DropdownMenuItem<int>(
+                        return DropdownMenuItem<int?>(
                           value: grindSize.id,
                           child: Text(DBHelper.getLocalizedGrindSize(
                               grindSize.code, context)),

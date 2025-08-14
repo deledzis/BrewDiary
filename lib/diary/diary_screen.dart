@@ -25,6 +25,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   List<BrewingResult> _brewingResults = [];
   bool _isLoading = true;
+  Map<int, Recipe> _recipesById = {};
 
   @override
   void initState() {
@@ -41,9 +42,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
     });
     try {
       final results = await dbHelper.getBrewingResults();
+      final recipes = await dbHelper.getRecipes();
       debugPrint("Loaded ${results.length} brewing results");
       setState(() {
         _brewingResults = results;
+        _recipesById = {
+          for (final r in recipes)
+            if (r.id != null) r.id!: r,
+        };
       });
     } catch (e) {
       debugPrint('Error loading brewing results: $e');
@@ -148,61 +154,52 @@ class _DiaryScreenState extends State<DiaryScreen> {
   ) {
     final l10n = AppLocalizations.of(context)!;
 
-    return FutureBuilder<Recipe?>(
-      future: result.recipeId != null
-          ? dbHelper.getRecipeById(result.recipeId!)
-          : Future.value(null),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Text(l10n.loadingRecipe);
-        }
+    final Recipe? recipe = result.recipeId != null
+        ? _recipesById[result.recipeId!]
+        : null;
 
-        final recipe = snapshot.data;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (recipe != null) ...[
+          _buildPreviewRowItem(
+            recipe.name,
+            Icons.receipt_long,
+          ),
+        ],
+        Row(
           children: [
-            if (recipe != null) ...[
-              _buildPreviewRowItem(
-                recipe.name,
-                Icons.receipt_long,
+            Expanded(
+              child: _buildPreviewRowItem(
+                '${result.coffeeGrams} ${l10n.g}',
+                Icons.coffee_maker,
               ),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: _buildPreviewRowItem(
-                    '${result.coffeeGrams} ${l10n.g}',
-                    Icons.coffee_maker,
-                  ),
-                ),
-                Expanded(
-                  child: _buildPreviewRowItem(
-                    _getGrindSizeName(result, grindSizes, context),
-                    Icons.grain,
-                  ),
-                ),
-              ],
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildPreviewRowItem(
-                    '${result.waterVolume} ${l10n.ml}',
-                    Icons.water_drop,
-                  ),
-                ),
-                Expanded(
-                  child: _buildPreviewRowItem(
-                    '${result.waterTemperature}${l10n.celsius}',
-                    Icons.thermostat,
-                  ),
-                ),
-              ],
+            Expanded(
+              child: _buildPreviewRowItem(
+                _getGrindSizeName(result, grindSizes, context),
+                Icons.grain,
+              ),
             ),
           ],
-        );
-      },
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildPreviewRowItem(
+                '${result.waterVolume} ${l10n.ml}',
+                Icons.water_drop,
+              ),
+            ),
+            Expanded(
+              child: _buildPreviewRowItem(
+                '${result.waterTemperature}${l10n.celsius}',
+                Icons.thermostat,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../db/brewing_method.dart';
 import '../../db/db_helper.dart';
@@ -37,7 +38,7 @@ class BrewingMethodProvider extends ChangeNotifier {
 
     if (method == null) {
       debugPrint('Warning: Brewing method with id $id not found');
-      return 'Unknown Method'; // Fallback value
+      return AppLocalizations.of(context)!.notSpecified;
     }
 
     return DBHelper.getLocalizedBrewingMethod(method.code, context);
