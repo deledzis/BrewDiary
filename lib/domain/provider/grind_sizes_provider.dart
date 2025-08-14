@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../db/db_helper.dart';
 import '../../db/grind_size.dart';
@@ -31,9 +32,13 @@ class GrindSizesProvider extends ChangeNotifier {
       _grindSizes.firstWhereOrNull((g) => g.id == id);
 
   String getLocalizedSizeName(BuildContext context, int grindSizeId) {
-    final grindSize = _grindSizes.firstWhere(
+    final grindSize = _grindSizes.firstWhereOrNull(
       (grindSize) => grindSize.id == grindSizeId,
     );
+
+    if (grindSize == null) {
+      return AppLocalizations.of(context)!.notSpecified;
+    }
 
     return DBHelper.getLocalizedGrindSize(grindSize.code, context);
   }

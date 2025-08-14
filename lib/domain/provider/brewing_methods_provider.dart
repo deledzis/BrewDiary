@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../db/brewing_method.dart';
 import '../../db/db_helper.dart';
@@ -31,9 +32,13 @@ class BrewingMethodProvider extends ChangeNotifier {
       _methods.firstWhereOrNull((m) => m.id == id);
 
   String getLocalizedSizeName(BuildContext context, int id) {
-    final method = _methods.firstWhere(
+    final method = _methods.firstWhereOrNull(
       (m) => m.id == id,
     );
+
+    if (method == null) {
+      return AppLocalizations.of(context)!.notSpecified;
+    }
 
     return DBHelper.getLocalizedBrewingMethod(method.code, context);
   }
