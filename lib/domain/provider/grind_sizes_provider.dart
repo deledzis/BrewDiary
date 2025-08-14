@@ -31,9 +31,14 @@ class GrindSizesProvider extends ChangeNotifier {
       _grindSizes.firstWhereOrNull((g) => g.id == id);
 
   String getLocalizedSizeName(BuildContext context, int grindSizeId) {
-    final grindSize = _grindSizes.firstWhere(
+    final grindSize = _grindSizes.firstWhereOrNull(
       (grindSize) => grindSize.id == grindSizeId,
     );
+
+    if (grindSize == null) {
+      debugPrint('Warning: Grind size with id $grindSizeId not found');
+      return 'Unknown Size'; // Fallback value
+    }
 
     return DBHelper.getLocalizedGrindSize(grindSize.code, context);
   }
