@@ -37,6 +37,7 @@ class GrindSizesProvider extends ChangeNotifier {
     );
 
     if (grindSize == null) {
+      debugPrint('Warning: Grind size with id $grindSizeId not found');
       return AppLocalizations.of(context)!.notSpecified;
     }
 

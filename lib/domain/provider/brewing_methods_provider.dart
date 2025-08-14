@@ -37,6 +37,7 @@ class BrewingMethodProvider extends ChangeNotifier {
     );
 
     if (method == null) {
+      debugPrint('Warning: Brewing method with id $id not found');
       return AppLocalizations.of(context)!.notSpecified;
     }
 
