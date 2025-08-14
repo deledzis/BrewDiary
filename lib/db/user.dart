@@ -73,7 +73,7 @@ class User {
     return {
       'id': id,
       'email': email,
-      'password': _passwordHash, // Store the hash, not plain text
+      'password_hash': _passwordHash, // Store the hash, not plain text
       'nickname': nickname,
       'created_date': createdDate.toIso8601String(),
     };
@@ -83,7 +83,7 @@ class User {
     return User(
       id: map['id'] as int,
       email: map['email'] as String,
-      passwordHash: map['password'] as String, // This is now a hash
+      passwordHash: map['password_hash'] as String, // This is now a hash
       nickname: map['nickname'] as String?,
       createdDate: DateTime.parse(map['created_date'] as String),
     );

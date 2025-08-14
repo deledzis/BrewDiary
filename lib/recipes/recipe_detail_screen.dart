@@ -20,6 +20,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   final dbHelper = DBHelper();
   late Recipe recipe;
   String _brewingMethodName = '';
+  String _grindSizeName = '';
   bool _isLoading = true;
 
   @override
@@ -28,6 +29,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     recipe = widget.recipe;
     debugPrint("Initializing RecipeDetailScreen");
     _loadBrewingMethodName();
+    _loadGrindSizeName();
   }
 
   /// Loads the brewing method name for the recipe.
@@ -55,14 +57,32 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
   }
 
+  /// Loads the grind size name for the recipe.
+  Future<void> _loadGrindSizeName() async {
+    if (recipe.grindSizeId == null) {
+      setState(() {
+        _grindSizeName = AppLocalizations.of(context)!.notSpecified;
+      });
+      return;
+    }
+
+    final grindSize = await dbHelper.getGrindSizeById(recipe.grindSizeId!);
+    if (grindSize != null) {
+      setState(() {
+        _grindSizeName = DBHelper.getLocalizedGrindSize(grindSize.code, context);
+      });
+    } else {
+      setState(() {
+        _grindSizeName = AppLocalizations.of(context)!.notSpecified;
+      });
+    }
+  }
+
   /// Gets the localized grind size name for a recipe.
   String _getGrindSizeName(Recipe recipe, BuildContext context) {
-    if (recipe.grindSizeId == null) {
-      return AppLocalizations.of(context)!.notSpecified;
-    }
-    // For now, return not specified. You can implement proper grind size loading here
-    // similar to how brewing methods are handled
-    return AppLocalizations.of(context)!.notSpecified;
+    return _grindSizeName.isEmpty
+        ? AppLocalizations.of(context)!.notSpecified
+        : _grindSizeName;
   }
 
   Widget _buildRunInstructionsButtonWidget(BuildContext context) {
