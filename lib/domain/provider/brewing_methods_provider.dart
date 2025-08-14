@@ -31,9 +31,14 @@ class BrewingMethodProvider extends ChangeNotifier {
       _methods.firstWhereOrNull((m) => m.id == id);
 
   String getLocalizedSizeName(BuildContext context, int id) {
-    final method = _methods.firstWhere(
+    final method = _methods.firstWhereOrNull(
       (m) => m.id == id,
     );
+
+    if (method == null) {
+      debugPrint('Warning: Brewing method with id $id not found');
+      return 'Unknown Method'; // Fallback value
+    }
 
     return DBHelper.getLocalizedBrewingMethod(method.code, context);
   }
