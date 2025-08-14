@@ -108,7 +108,7 @@ class DBHelper {
         ''');
     await db.execute('''
           CREATE TABLE grind_sizes(
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             code TEXT UNIQUE NOT NULL
           )
         ''');
@@ -164,16 +164,16 @@ class DBHelper {
         ''');
 
     // Insert default values
-    await db.insert('brewing_methods', {'id': 1, 'code': _methodV60});
-    await db.insert('brewing_methods', {'id': 2, 'code': _methodEspresso});
-    await db.insert('brewing_methods', {'id': 3, 'code': _methodAeropress});
-    await db.insert('grind_sizes', {'id': 1, 'code': _grindTurkish});
-    await db.insert('grind_sizes', {'id': 2, 'code': _grindExtraFine});
-    await db.insert('grind_sizes', {'id': 3, 'code': _grindFine});
-    await db.insert('grind_sizes', {'id': 4, 'code': _grindMediumFine});
-    await db.insert('grind_sizes', {'id': 5, 'code': _grindMedium});
-    await db.insert('grind_sizes', {'id': 6, 'code': _grindMediumCoarse});
-    await db.insert('grind_sizes', {'id': 7, 'code': _grindCoarse});
+    await db.insert('brewing_methods', {'code': _methodV60});
+    await db.insert('brewing_methods', {'code': _methodEspresso});
+    await db.insert('brewing_methods', {'code': _methodAeropress});
+    await db.insert('grind_sizes', {'code': _grindTurkish});
+    await db.insert('grind_sizes', {'code': _grindExtraFine});
+    await db.insert('grind_sizes', {'code': _grindFine});
+    await db.insert('grind_sizes', {'code': _grindMediumFine});
+    await db.insert('grind_sizes', {'code': _grindMedium});
+    await db.insert('grind_sizes', {'code': _grindMediumCoarse});
+    await db.insert('grind_sizes', {'code': _grindCoarse});
   }
 
   /*
